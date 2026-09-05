@@ -16,6 +16,7 @@ import { apiRouter } from "./routes/index.js";
 import { initSocket } from "./websocket/index.js";
 import { corsOrigin } from "./utils/origins.js";
 import { ensureAdmin } from "./services/ensureAdmin.js";
+import { exec } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -65,7 +66,14 @@ async function main() {
     server.once("error", reject);
   });
 
-  void ensureAdmin().catch((e) => console.warn("Admin bootstrap failed", e));
+  void new Promise<void>((resolve) => {
+    exec("npx prisma migrate deploy", { env: process.env }, (err, stdout, stderr) => {
+      if (stdout) console.log(stdout);
+      if (stderr) console.warn(stderr);
+      if (err) console.warn("migrate deploy failed", err.message);
+      resolve();
+    });
+  }).then(() => ensureAdmin()).catch((e) => console.warn("Admin bootstrap failed", e));
   const { startTelegramBot } = await import("./telegram/bot.js");
   void startTelegramBot().catch((e) => console.warn("Telegram bot failed to start", e));
 }

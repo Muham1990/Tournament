@@ -1,9 +1,13 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../utils/prisma.js";
 
+function envStr(key: string) {
+  return String(process.env[key] || "").trim().replace(/^["']|["']$/g, "");
+}
+
 export async function ensureAdmin() {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
+  const email = envStr("ADMIN_EMAIL");
+  const password = envStr("ADMIN_PASSWORD");
   if (!email || !password) return null;
   const hash = await bcrypt.hash(password, 12);
   const already = await prisma.user.findUnique({ where: { email } });

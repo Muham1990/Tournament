@@ -5,7 +5,7 @@ import { cookieOptions } from "../utils/origins.js";
 export const GATE_COOKIE = "ag";
 
 export function adminGateSecret() {
-  return String(process.env.ADMIN_GATE || "").trim();
+  return String(process.env.ADMIN_GATE || "").trim().replace(/^["']|["']$/g, "");
 }
 
 export function gateToken() {

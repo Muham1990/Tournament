@@ -126,8 +126,13 @@ export function LoginPage() {
     try {
       await login(email.trim(), password);
       nav("/admin", { replace: true });
-    } catch {
-      setErr(t("login.error"));
+    } catch (e: unknown) {
+      const ax = e as { code?: string; response?: { data?: { error?: string } } };
+      if (ax.code === "ECONNABORTED" || ax.code === "ERR_NETWORK") {
+        setErr("Сервер не отвечает. Подождите, пока kumite-arena-server станет Online.");
+      } else {
+        setErr(ax.response?.data?.error || t("login.error"));
+      }
     } finally {
       setBusy(false);
     }

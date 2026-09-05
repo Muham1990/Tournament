@@ -3,5 +3,5 @@ builder = "nixpacks"
 buildCommand = "npm install --include=dev && npx prisma generate && npm run build --prefix server"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && node server/dist/index.js"
+startCommand = "node server/dist/index.js"
 restartPolicyType = "ON_FAILURE"

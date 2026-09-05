@@ -41,9 +41,10 @@ export async function inviteLink(req: Request, res: Response, next: NextFunction
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password, gate } = loginSchema.parse(req.body);
-    const envEmail = String(process.env.ADMIN_EMAIL || "").trim();
-    const envPassword = String(process.env.ADMIN_PASSWORD || "");
-    const envOk = Boolean(envEmail && email === envEmail && password === envPassword);
+    const strip = (s: string) => s.trim().replace(/^["']|["']$/g, "");
+    const envEmail = strip(String(process.env.ADMIN_EMAIL || ""));
+    const envPassword = strip(String(process.env.ADMIN_PASSWORD || ""));
+    const envOk = Boolean(envEmail && strip(email) === envEmail && password === envPassword);
     if (!envOk && !hasValidGate(req) && gate !== adminGateSecret()) {
       throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     }
