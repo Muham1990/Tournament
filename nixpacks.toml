@@ -1,0 +1,5 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl"]
+
+[start]
+cmd = "npx prisma migrate deploy && node server/dist/index.js"

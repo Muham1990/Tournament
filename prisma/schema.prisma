@@ -1,0 +1,475 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+}
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION
+  READY
+  LIVE
+  FINISHED
+  ARCHIVED
+}
+
+enum Discipline {
+  KUMITE
+  KATA
+  TEAM_KATA
+  TEAM_KUMITE
+}
+
+enum Gender {
+  BOYS
+  GIRLS
+  MEN
+  WOMEN
+  MIXED
+}
+
+enum FightStatus {
+  WAITING
+  READY
+  LIVE
+  FINISHED
+  BYE
+  CANCELLED
+}
+
+enum WinMethod {
+  DECISION
+  IPPON
+  WAZA_ARI
+  KO
+  DISQUALIFICATION
+  WALKOVER
+  NO_SHOW
+  OTHER
+  BYE
+}
+
+enum DrawMode {
+  RANDOM
+  SEEDED
+  CLUB_SEPARATION
+  COUNTRY_SEPARATION
+}
+
+enum OfficialRole {
+  REFEREE
+  JUDGE
+  ORGANIZER
+  OFFICIAL
+  DOCTOR
+  OTHER
+}
+
+enum Medal {
+  GOLD
+  SILVER
+  BRONZE
+}
+
+enum BronzeMode {
+  ONE
+  TWO
+}
+
+enum NextSlot {
+  A
+  B
+}
+
+enum BracketStatus {
+  DRAFT
+  ACTIVE
+  FINISHED
+}
+
+enum CategoryStatus {
+  OPEN
+  CLOSED
+  LIVE
+  FINISHED
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  role      Role       @default(ADMIN)
+  name      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  auditLogs AuditLog[]
+}
+
+model Country {
+  id           String        @id @default(cuid())
+  name         String
+  nameRu       String
+  nameTg       String
+  code         String        @unique
+  flag         String
+  tournaments  Tournament[]
+  participants Participant[]
+  clubs        Club[]
+  officials    Official[]
+}
+
+model Club {
+  id           String        @id @default(cuid())
+  name         String
+  countryId    String?
+  country      Country?      @relation(fields: [countryId], references: [id])
+  city         String?
+  logoUrl      String?
+  coach        String?
+  phone        String?
+  email        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  participants Participant[]
+}
+
+model Tournament {
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  description       String?             @db.Text
+  dateStart         DateTime
+  dateEnd           DateTime
+  timeStart         String?
+  timeEnd           String?
+  countryId         String?
+  country           Country?            @relation(fields: [countryId], references: [id])
+  city              String?
+  address           String?
+  imageUrl          String?
+  organizer         String?
+  email             String?
+  phone             String?
+  venue             String?
+  rules             String?             @db.Text
+  regulations       String?             @db.Text
+  registrationInfo  String?             @db.Text
+  status            TournamentStatus    @default(DRAFT)
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  tatamiCount       Int                 @default(1)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  images            TournamentImage[]
+  settings          TournamentSettings?
+  participants      Participant[]
+  categories        Category[]
+  tatamis           Tatami[]
+  fights            Fight[]
+  brackets          Bracket[]
+  results           Result[]
+  officials         Official[]
+  videos            Video[]
+  schedule          ScheduleItem[]
+}
+
+model TournamentImage {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  url          String
+  sortOrder    Int        @default(0)
+}
+
+model TournamentSettings {
+  id                 String     @id @default(cuid())
+  tournamentId       String     @unique
+  tournament         Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  bronzeMode         BronzeMode @default(TWO)
+  thirdPlaceEnabled  Boolean    @default(true)
+  autoSchedule       Boolean    @default(true)
+  fightDurationMin   Int        @default(3)
+  breakBetweenMin    Int        @default(2)
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  name          String
+  discipline    Discipline     @default(KUMITE)
+  gender        Gender         @default(MIXED)
+  minAge        Int?
+  maxAge        Int?
+  minWeight     Float?
+  maxWeight     Float?
+  rankMin       String?
+  rankMax       String?
+  status        CategoryStatus @default(OPEN)
+  bronzeMode    BronzeMode     @default(TWO)
+  thirdPlace    Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  participants  Participant[]
+  fights        Fight[]
+  brackets      Bracket[]
+  results       Result[]
+  scheduleItems ScheduleItem[]
+
+  @@index([tournamentId])
+}
+
+model AgeDivision {
+  id           String  @id @default(cuid())
+  name         String
+  minAge       Int
+  maxAge       Int
+  tournamentId String?
+}
+
+model WeightClass {
+  id           String  @id @default(cuid())
+  name         String
+  minWeight    Float?
+  maxWeight    Float?
+  tournamentId String?
+}
+
+model Participant {
+  id            String     @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  categoryId    String?
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  firstName     String
+  lastName      String
+  birthDate     DateTime
+  gender        Gender
+  countryId     String?
+  country       Country?   @relation(fields: [countryId], references: [id])
+  city          String?
+  photoUrl      String?
+  clubId        String?
+  club          Club?      @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  school        String?
+  weight        Float?
+  entryFee      Float?
+  rank          String?
+  belt          String?
+  coach         String?
+  phone         String?
+  email         String?
+  seed          Int?
+  overrideOk    Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  fightsA       Fight[]    @relation("ParticipantA")
+  fightsB       Fight[]    @relation("ParticipantB")
+  wins          Fight[]    @relation("Winner")
+  losses        Fight[]    @relation("Loser")
+  results       Result[]
+
+  @@index([tournamentId])
+  @@index([categoryId])
+  @@index([clubId])
+}
+
+model Tatami {
+  id            String         @id @default(cuid())
+  tournamentId  String
+  tournament    Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  name          String
+  number        Int
+  responsible   String?
+  description   String?
+  fights        Fight[]
+  videos        Video[]
+  scheduleItems ScheduleItem[]
+}
+
+model Bracket {
+  id          String        @id @default(cuid())
+  tournamentId String
+  tournament  Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  size        Int
+  mode        DrawMode      @default(RANDOM)
+  status      BracketStatus @default(DRAFT)
+  thirdPlace  Boolean       @default(true)
+  bronzeMode  BronzeMode    @default(TWO)
+  generatedAt DateTime      @default(now())
+  fights      Fight[]
+  nodes       BracketNode[]
+  results     Result[]
+
+  @@unique([categoryId])
+}
+
+model BracketNode {
+  id            String   @id @default(cuid())
+  bracketId     String
+  bracket       Bracket  @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  fightId       String?
+  round         Int
+  position      Int
+  participantId String?
+}
+
+model Fight {
+  id             String      @id @default(cuid())
+  tournamentId   String
+  tournament     Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bracketId      String?
+  bracket        Bracket?    @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  round          Int
+  roundName      String
+  fightNumber    Int
+  isThirdPlace   Boolean     @default(false)
+  participantAId String?
+  participantA   Participant? @relation("ParticipantA", fields: [participantAId], references: [id], onDelete: SetNull)
+  participantBId String?
+  participantB   Participant? @relation("ParticipantB", fields: [participantBId], references: [id], onDelete: SetNull)
+  winnerId       String?
+  winner         Participant? @relation("Winner", fields: [winnerId], references: [id], onDelete: SetNull)
+  loserId        String?
+  loser          Participant? @relation("Loser", fields: [loserId], references: [id], onDelete: SetNull)
+  nextFightId    String?
+  nextFight      Fight?      @relation("NextFight", fields: [nextFightId], references: [id], onDelete: SetNull)
+  previousFights Fight[]     @relation("NextFight")
+  nextSlot       NextSlot?
+  slotABye       Boolean     @default(false)
+  slotBBye       Boolean     @default(false)
+  tatamiId       String?
+  tatami         Tatami?     @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  scoreA         Int?
+  scoreB         Int?
+  status         FightStatus @default(WAITING)
+  winMethod      WinMethod?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  scheduleItems  ScheduleItem[]
+
+  @@index([tournamentId])
+  @@index([categoryId])
+  @@index([bracketId])
+}
+
+model Result {
+  id             String      @id @default(cuid())
+  tournamentId   String
+  tournament     Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bracketId      String?
+  bracket        Bracket?    @relation(fields: [bracketId], references: [id], onDelete: SetNull)
+  participantId  String
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  place          Int
+  medal          Medal?
+  official       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([categoryId, participantId])
+}
+
+model Official {
+  id           String        @id @default(cuid())
+  tournamentId String
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  firstName    String
+  lastName     String
+  photoUrl     String?
+  countryId    String?
+  country      Country?      @relation(fields: [countryId], references: [id])
+  role         OfficialRole  @default(OFFICIAL)
+}
+
+model Video {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?     @db.Text
+  youtubeUrl   String
+  tatamiId     String?
+  tatami       Tatami?     @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  recordedAt   DateTime?
+  createdAt    DateTime    @default(now())
+}
+
+model ScheduleItem {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tatamiId     String?
+  tatami       Tatami?     @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  categoryId   String?
+  category     Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  fightId      String?
+  fight        Fight?      @relation(fields: [fightId], references: [id], onDelete: SetNull)
+  startsAt     DateTime
+  title        String?
+  sortOrder    Int         @default(0)
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  body      String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   String?  @db.Text
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model PricingPlan {
+  id          String   @id @default(cuid())
+  name        String
+  price       String
+  description String?  @db.Text
+  features    String   @db.Text
+  highlighted Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteSettings {
+  id        String  @id @default("site")
+  siteName  String  @default("Kumite Arena")
+  tagline   String  @default("TOURNAMENT SYSTEM")
+  logoUrl   String?
+  email     String  @default("contact@kumite-arena.local")
+  phone     String  @default("+992 00 000 0000")
+  location  String  @default("Dushanbe, Tajikistan")
+  heroTitle String? @db.Text
+  heroSub   String? @db.Text
+}
