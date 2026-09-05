@@ -49,7 +49,12 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     }
     setGateCookie(res);
     if (envOk) {
-      try { await ensureAdmin(); } catch { /* tables may still be migrating */ }
+      try {
+        await Promise.race([
+          ensureAdmin(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("admin-timeout")), 8000)),
+        ]);
+      } catch { /* tables may still be migrating */ }
     }
     let user = await prisma.user.findUnique({ where: { email } });
     if (!user && envOk) {

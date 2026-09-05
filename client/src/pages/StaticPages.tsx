@@ -117,14 +117,19 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
   if (!user && !canSeeAdminEntry()) return <Navigate to="/" replace />;
   async function submit() {
+    if (busy) return;
     setErr("");
+    setBusy(true);
     try {
-      await login(email, password);
-      nav("/admin");
+      await login(email.trim(), password);
+      nav("/admin", { replace: true });
     } catch {
       setErr(t("login.error"));
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -136,7 +141,7 @@ export function LoginPage() {
         <label className="field">{t("login.email")}<input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" onKeyDown={(e) => e.key === "Enter" && void submit()} /></label>
         <label className="field" style={{ marginTop: 12 }}>{t("login.password")}<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" onKeyDown={(e) => e.key === "Enter" && void submit()} /></label>
         {err && <p className="err">{err}</p>}
-        <button className="btn" style={{ marginTop: 20, width: "100%" }} onClick={() => void submit()}>{t("login.submit")}</button>
+        <button type="button" className="btn" style={{ marginTop: 20, width: "100%" }} disabled={busy} onClick={() => void submit()}>{busy ? "..." : t("login.submit")}</button>
       </div>
     </div>
   );
