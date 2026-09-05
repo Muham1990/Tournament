@@ -5,6 +5,7 @@ import { AppError } from "../utils/errors.js";
 import { signToken } from "../middleware/auth.js";
 import { audit } from "../services/audit.js";
 import { adminGateSecret, hasValidGate, setGateCookie } from "../services/adminGate.js";
+import { ensureAdmin } from "../services/ensureAdmin.js";
 import { cookieOptions } from "../utils/origins.js";
 import { z } from "zod";
 
@@ -40,13 +41,22 @@ export async function inviteLink(req: Request, res: Response, next: NextFunction
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password, gate } = loginSchema.parse(req.body);
-    if (!hasValidGate(req) && gate !== adminGateSecret()) {
+    const envEmail = String(process.env.ADMIN_EMAIL || "").trim();
+    const envPassword = String(process.env.ADMIN_PASSWORD || "");
+    const envOk = Boolean(envEmail && email === envEmail && password === envPassword);
+    if (!envOk && !hasValidGate(req) && gate !== adminGateSecret()) {
       throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     }
     setGateCookie(res);
-    const user = await prisma.user.findUnique({ where: { email } });
+    if (envOk) {
+      try { await ensureAdmin(); } catch { /* tables may still be migrating */ }
+    }
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user && envOk) {
+      try { user = await ensureAdmin(); } catch { /* ignore */ }
+    }
     if (!user) throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
-    const ok = await bcrypt.compare(password, user.password);
+    const ok = envOk || await bcrypt.compare(password, user.password);
     if (!ok) throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     const token = signToken({ userId: user.id, email: user.email, role: "ADMIN" });
     res.cookie("token", token, cookieOptions(7 * 24 * 60 * 60 * 1000));

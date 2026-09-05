@@ -8,7 +8,6 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import { prisma } from "./utils/prisma.js";
 import { errorHandler } from "./utils/errors.js";
 import { optionalAuth } from "./middleware/auth.js";
 import { uploadRoot } from "./middleware/upload.js";
@@ -16,35 +15,11 @@ import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/index.js";
 import { initSocket } from "./websocket/index.js";
 import { corsOrigin } from "./utils/origins.js";
-import bcrypt from "bcryptjs";
+import { ensureAdmin } from "./services/ensureAdmin.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config();
-
-async function ensureAdmin() {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password) {
-    console.warn("ADMIN_EMAIL / ADMIN_PASSWORD not set — skip admin bootstrap");
-    return;
-  }
-  const hash = await bcrypt.hash(password, 12);
-  const already = await prisma.user.findUnique({ where: { email } });
-  if (already) {
-    await prisma.user.update({ where: { email }, data: { password: hash, role: "ADMIN" } });
-    return;
-  }
-  const oldAdmin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-  if (oldAdmin) {
-    await prisma.user.update({
-      where: { id: oldAdmin.id },
-      data: { email, password: hash, role: "ADMIN" },
-    });
-    return;
-  }
-  await prisma.user.create({ data: { email, password: hash, role: "ADMIN", name: "Administrator" } });
-}
 
 async function main() {
   const app = express();
