@@ -43,12 +43,17 @@ async function devHttps() {
   return { key: pems.private, cert: pems.cert };
 }
 
-export default defineConfig(async () => ({
+export default defineConfig(async ({ command, isPreview }) => ({
   plugins: [react()],
+  preview: {
+    host: "0.0.0.0",
+    port: Number(process.env.PORT) || 4173,
+    allowedHosts: true,
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,
-    https: await devHttps(),
+    https: command === "serve" && !isPreview ? await devHttps() : undefined,
     allowedHosts: true,
     proxy: {
       "/api": { target: "http://localhost:5000", changeOrigin: true },
