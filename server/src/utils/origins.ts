@@ -22,7 +22,10 @@ export function corsOrigin(origin: string | undefined, cb: (err: Error | null, a
   const host = (() => {
     try { return new URL(origin).hostname; } catch { return ""; }
   })();
-  const ok = allowedOrigins().includes(clean(origin)) || host.endsWith(".vercel.app");
+  const ok =
+    allowedOrigins().includes(clean(origin)) ||
+    host.endsWith(".vercel.app") ||
+    host.endsWith(".up.railway.app");
   cb(null, ok);
 }
 

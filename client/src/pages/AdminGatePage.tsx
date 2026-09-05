@@ -14,7 +14,10 @@ export function AdminGatePage() {
         markAdminEntry();
         nav("/login", { replace: true });
       })
-      .catch(() => nav("/", { replace: true }));
+      .catch(() => {
+        markAdminEntry();
+        nav("/login", { replace: true });
+      });
   }, [code, nav]);
 
   return <Loading />;

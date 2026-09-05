@@ -1,5 +1,6 @@
-/** Empty in local Vite (uses proxy). On Vercel set VITE_API_URL to the Railway API. */
-export const API_ORIGIN = String(import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+/** Empty in local Vite (uses proxy). On Railway/Vercel set VITE_API_URL to the API origin. */
+const FALLBACK_API = "https://kumite-arena-server-production.up.railway.app";
+export const API_ORIGIN = String(import.meta.env.VITE_API_URL || (import.meta.env.PROD ? FALLBACK_API : "")).replace(/\/$/, "");
 
 export function apiBase() {
   return API_ORIGIN ? `${API_ORIGIN}/api` : "/api";
