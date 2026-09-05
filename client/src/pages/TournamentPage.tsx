@@ -75,24 +75,28 @@ function Info({ t: item }: { t: Tournament }) {
   const date = sameDay ? fmtDate(item.dateStart) : `${fmtDate(item.dateStart)} — ${fmtDate(item.dateEnd)}`;
   const time = [item.timeStart, item.timeEnd].filter(Boolean).join(" — ") || "—";
   const place = [item.city, item.country?.nameRu].filter(Boolean).join(", ");
-  const facts: [string, string][] = [
-    [t("t.status"), item.status],
-    [t("t.date"), date],
-    [t("t.time"), time],
-    [t("t.country"), item.country?.nameRu || ""],
-    [t("t.city"), item.city || ""],
-    [t("t.address"), item.address || ""],
-    [t("t.venue"), item.venue || ""],
-    [t("t.organizer"), item.organizer || ""],
-    [t("t.email"), item.email || ""],
-    [t("t.phone"), item.phone || ""],
-  ].filter(([k, v]) => v && (k === t("t.status") || k === t("t.date") || v !== "—"));
-  const notes: [string, string][] = [
-    [t("t.description"), item.description || ""],
-    [t("t.rules"), item.rules || ""],
-    [t("t.regulations"), item.regulations || ""],
-    [t("t.registration"), item.registrationInfo || ""],
-  ].filter(([, v]) => v.trim());
+  const facts = (
+    [
+      [t("t.status"), item.status],
+      [t("t.date"), date],
+      [t("t.time"), time],
+      [t("t.country"), item.country?.nameRu || ""],
+      [t("t.city"), item.city || ""],
+      [t("t.address"), item.address || ""],
+      [t("t.venue"), item.venue || ""],
+      [t("t.organizer"), item.organizer || ""],
+      [t("t.email"), item.email || ""],
+      [t("t.phone"), item.phone || ""],
+    ] as [string, string][]
+  ).filter(([k, v]) => v && (k === t("t.status") || k === t("t.date") || v !== "—"));
+  const notes = (
+    [
+      [t("t.description"), item.description || ""],
+      [t("t.rules"), item.rules || ""],
+      [t("t.regulations"), item.regulations || ""],
+      [t("t.registration"), item.registrationInfo || ""],
+    ] as [string, string][]
+  ).filter(([, v]) => v.trim());
   return (
     <div className="container info-wrap">
       {item.imageUrl && <img className="info-cover" src={mediaUrl(item.imageUrl)} alt="" />}
