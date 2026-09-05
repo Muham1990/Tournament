@@ -11,6 +11,7 @@ import { z } from "zod";
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  gate: z.string().optional(),
 });
 
 export async function openGate(req: Request, res: Response, next: NextFunction) {
@@ -38,10 +39,11 @@ export async function inviteLink(req: Request, res: Response, next: NextFunction
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!hasValidGate(req)) {
+    const { email, password, gate } = loginSchema.parse(req.body);
+    if (!hasValidGate(req) && gate !== adminGateSecret()) {
       throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     }
-    const { email, password } = loginSchema.parse(req.body);
+    setGateCookie(res);
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     const ok = await bcrypt.compare(password, user.password);

@@ -14,7 +14,11 @@ import type {
 
 export const AuthApi = {
   login: (email: string, password: string) =>
-    api.post<{ token: string; user: User }>("/auth/login", { email, password }),
+    api.post<{ token: string; user: User }>("/auth/login", {
+      email,
+      password,
+      gate: sessionStorage.getItem("ka_gate") || undefined,
+    }),
   logout: () => api.post("/auth/logout"),
   me: () => api.get<{ user: User }>("/auth/me"),
   openGate: (code: string) => api.get<{ ok: boolean }>(`/auth/gate/${encodeURIComponent(code)}`),

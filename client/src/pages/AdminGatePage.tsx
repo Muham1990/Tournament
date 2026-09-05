@@ -9,6 +9,7 @@ export function AdminGatePage() {
   const nav = useNavigate();
 
   useEffect(() => {
+    if (code) sessionStorage.setItem("ka_gate", code);
     AuthApi.openGate(code)
       .then(() => {
         markAdminEntry();
