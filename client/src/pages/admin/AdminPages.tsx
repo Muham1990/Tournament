@@ -21,7 +21,7 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const [s, setS] = useState<Record<string, number>>({});
-  useEffect(() => { MiscApi.dashboard().then((r) => setS(r.data)); }, []);
+  useEffect(() => { MiscApi.dashboard().then((r) => setS(r.data as Record<string, number>)).catch(() => undefined); }, []);
   const cards = [
     ["tournaments", t("admin.tournaments")],
     ["live", t("status.LIVE")],
@@ -56,7 +56,7 @@ export function AdminTournaments() {
   const { t } = useTranslation();
   const nav = useNavigate();
   const [items, setItems] = useState<Tournament[]>([]);
-  const load = () => TournamentApi.list({ when: "all" }).then((r) => setItems(r.data.items));
+  const load = () => TournamentApi.list({ when: "all" }).then((r) => setItems(r.data.items)).catch(() => setItems([]));
   useEffect(() => { void load(); }, []);
   return (
     <div>
@@ -277,17 +277,55 @@ export function AdminTournamentHub() {
 
 function AdminParts({ tid }: { tid: string }) {
   const { t } = useTranslation();
+  const toast = useToast();
   const [items, setItems] = useState<Participant[]>([]);
   const [total, setTotal] = useState(0);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Participant | null>(null);
   const load = () => ParticipantApi.list(tid, { pageSize: 100 }).then((r) => { setItems(r.data.items); setTotal(r.data.total); });
   useEffect(() => { void load(); }, [tid]);
+
+  async function removeOne(p: Participant) {
+    if (!confirm(`${t("p.removeConfirm")} ${p.firstName} ${p.lastName}?`)) return;
+    try {
+      await ParticipantApi.remove(p.id);
+      await load();
+    } catch (e: unknown) {
+      const ax = e as { response?: { data?: { error?: string } } };
+      toast.show(ax.response?.data?.error || "Error");
+    }
+  }
+
+  async function removeAll() {
+    if (!items.length) return;
+    if (!confirm(t("p.removeAllConfirm"))) return;
+    try {
+      await ParticipantApi.removeAll(tid);
+      await load();
+    } catch (e: unknown) {
+      const ax = e as { response?: { data?: { error?: string } } };
+      toast.show(ax.response?.data?.error || "Error");
+    }
+  }
+
   return (
     <div>
-      <button className="btn" onClick={() => { setEdit(null); setOpen(true); }}>{t("p.add")}</button>
+      <div className="btn-row">
+        <button className="btn" onClick={() => { setEdit(null); setOpen(true); }}>{t("p.add")}</button>
+        {items.length > 0 && (
+          <>
+            <button className="btn btn-danger" disabled>{t("p.remove")}</button>
+            <button className="btn btn-danger" onClick={() => void removeAll()}>{t("p.all")}</button>
+          </>
+        )}
+      </div>
       {items.length === 0 ? <EmptyState text={t("p.empty")} action={<button className="btn" onClick={() => setOpen(true)}>{t("p.add")}</button>} /> : (
-        <ParticipantTable items={items} total={total} onRow={(p) => { setEdit(p); setOpen(true); }} />
+        <ParticipantTable
+          items={items}
+          total={total}
+          onRow={(p) => { setEdit(p); setOpen(true); }}
+          onDelete={(p) => void removeOne(p)}
+        />
       )}
       {open && <ParticipantModal tournamentId={tid} initial={edit} onClose={() => setOpen(false)} onSaved={load} />}
     </div>

@@ -71,6 +71,10 @@ const ru = {
     school: "Школа",
     add: "+ ДОБАВИТЬ УЧАСТНИКА",
     clubs: "Клубы",
+    remove: "УДАЛИТЬ",
+    all: "ВСЕ",
+    removeConfirm: "Удалить участника",
+    removeAllConfirm: "Удалить всех участников этого турнира?",
   },
   draw: {
     empty: "Сетка ещё не создана",
@@ -324,7 +328,7 @@ const en: typeof ru = {
     city: "City", address: "Address", organizer: "Organizer", email: "Email", phone: "Phone", venue: "Venue",
     rules: "Rules", regulations: "Regulations", registration: "Registration info", status: "Status", description: "Description",
   },
-  p: { search: "Search", searchCat: "Search category", category: "Category", empty: "No participants yet", n: "#", athlete: "Participant", age: "Age", rank: "Class", school: "School", add: "+ ADD PARTICIPANT", clubs: "Clubs" },
+  p: { search: "Search", searchCat: "Search category", category: "Category", empty: "No participants yet", n: "#", athlete: "Participant", age: "Age", rank: "Class", school: "School", add: "+ ADD PARTICIPANT", clubs: "Clubs", remove: "DELETE", all: "ALL", removeConfirm: "Delete participant", removeAllConfirm: "Delete all participants in this tournament?" },
   draw: {
     empty: "Bracket has not been created yet", open: "OPEN BRACKET", generate: "CREATE BRACKET", regenerate: "REGENERATE BRACKET",
     current: "SHOW CURRENT FIGHT", fit: "FIT TO SCREEN", bye: "BYE", advancedBye: "ADVANCED BYE", winner: "WINNER", eliminated: "ELIMINATED",
@@ -485,7 +489,7 @@ const tg: typeof ru = {
     city: "Шаҳр", address: "Суроға", organizer: "Ташкилкунанда", email: "Email", phone: "Телефон", venue: "Макон",
     rules: "Қоидаҳо", regulations: "Низомнома", registration: "Бақайдгирӣ", status: "Ҳолат", description: "Тавсиф",
   },
-  p: { search: "Search", searchCat: "Ҷустуҷӯи категория", category: "Категория", empty: "Иштирокчиён ҳанӯз илова нашудаанд", n: "№", athlete: "Иштирокчӣ", age: "Синну сол", rank: "Дараҷа", school: "Мактаб", add: "+ ИЛОВАИ ИШТИРОКЧӢ", clubs: "Клубҳо" },
+  p: { search: "Search", searchCat: "Ҷустуҷӯи категория", category: "Категория", empty: "Иштирокчиён ҳанӯз илова нашудаанд", n: "№", athlete: "Иштирокчӣ", age: "Синну сол", rank: "Дараҷа", school: "Мактаб", add: "+ ИЛОВАИ ИШТИРОКЧӢ", clubs: "Клубҳо", remove: "НЕСТ КАРДАН", all: "ҲАМА", removeConfirm: "Иштирокчиро нест кунем", removeAllConfirm: "Ҳамаи иштирокчиёни ин мусобиқаро нест кунем?" },
   draw: {
     empty: "Сетка ҳанӯз сохта нашудааст", open: "КУШОДАНИ СЕТКА", generate: "СОХТАНИ СЕТКА", regenerate: "АЗ НАВ СОХТАН",
     current: "МУҲОРИБАИ ҶОРӢ", fit: "FIT TO SCREEN", bye: "BYE", advancedBye: "ADVANCED BYE", winner: "ҒОЛИБ", eliminated: "ХАРИҶ",

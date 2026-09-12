@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../utils/prisma.js";
 
-function envStr(key: string) {
+export const ENV_ADMIN_ID = "env-admin";
+
+export function envStr(key: string) {
   return String(process.env[key] || "").trim().replace(/^["']|["']$/g, "");
 }
 

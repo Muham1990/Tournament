@@ -24,6 +24,17 @@ export function errorHandler(
     res.status(400).json({ error: msg, code: "VALIDATION" });
     return;
   }
+  const prismaCode = (err as { code?: string; errorCode?: string }).code
+    || (err as { errorCode?: string }).errorCode;
+  const prismaName = (err as { name?: string }).name || "";
+  if ((typeof prismaCode === "string" && prismaCode.startsWith("P")) || prismaName.includes("Prisma")) {
+    console.error(err);
+    res.status(503).json({
+      error: "База данных недоступна. Проверьте DATABASE_URL и миграции на Railway.",
+      code: "DB",
+    });
+    return;
+  }
   console.error(err);
   res.status(500).json({ error: "Internal server error", code: "INTERNAL" });
 }

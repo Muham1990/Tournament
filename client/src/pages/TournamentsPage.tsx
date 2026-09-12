@@ -16,12 +16,12 @@ export function TournamentsPage() {
   const [countries, setCountries] = useState<Country[]>([]);
 
   useEffect(() => {
-    CountryApi.list().then((r) => setCountries(r.data.items));
+    CountryApi.list().then((r) => setCountries(r.data.items)).catch(() => setCountries([]));
   }, []);
 
   useEffect(() => {
     const tmr = setTimeout(() => {
-      TournamentApi.list({ when, q, countryId }).then((r) => setItems(r.data.items));
+      TournamentApi.list({ when, q, countryId }).then((r) => setItems(r.data.items)).catch(() => setItems([]));
     }, 250);
     return () => clearTimeout(tmr);
   }, [when, q, countryId]);

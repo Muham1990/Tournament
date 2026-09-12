@@ -3,8 +3,13 @@ import type { Participant } from "../types";
 import { mediaUrl } from "../lib/config";
 
 export function ParticipantTable({
-  items, total, onRow,
-}: { items: Participant[]; total: number; onRow?: (p: Participant) => void }) {
+  items, total, onRow, onDelete,
+}: {
+  items: Participant[];
+  total: number;
+  onRow?: (p: Participant) => void;
+  onDelete?: (p: Participant) => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="part-table-wrap">
@@ -17,6 +22,7 @@ export function ParticipantTable({
             <th>{t("p.age")}</th>
             <th>{t("p.rank")}</th>
             <th>{t("p.school")}</th>
+            {onDelete && <th />}
           </tr>
         </thead>
         <tbody>
@@ -36,6 +42,17 @@ export function ParticipantTable({
               <td>{p.age ?? "—"}</td>
               <td>{p.rank || p.belt || "—"}</td>
               <td>{p.school || p.club?.name || "—"}</td>
+              {onDelete && (
+                <td>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={(e) => { e.stopPropagation(); onDelete(p); }}
+                  >
+                    {t("p.remove")}
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

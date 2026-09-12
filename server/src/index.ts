@@ -15,7 +15,8 @@ import { authRouter } from "./routes/auth.js";
 import { apiRouter } from "./routes/index.js";
 import { initSocket } from "./websocket/index.js";
 import { corsOrigin } from "./utils/origins.js";
-import { ensureAdmin } from "./services/ensureAdmin.js";
+import { bootstrapDb } from "./services/bootstrapDb.js";
+import { migrateDatabaseUrl } from "./utils/prisma.js";
 import { exec } from "child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -66,14 +67,32 @@ async function main() {
     server.once("error", reject);
   });
 
+  const repoRoot = path.resolve(__dirname, "../..");
+  const schema = path.join(repoRoot, "prisma", "schema.prisma");
   void new Promise<void>((resolve) => {
-    exec("npx prisma migrate deploy", { env: process.env }, (err, stdout, stderr) => {
-      if (stdout) console.log(stdout);
-      if (stderr) console.warn(stderr);
-      if (err) console.warn("migrate deploy failed", err.message);
+    if (!fs.existsSync(schema)) {
+      console.warn("prisma schema missing", schema);
       resolve();
-    });
-  }).then(() => ensureAdmin()).catch((e) => console.warn("Admin bootstrap failed", e));
+      return;
+    }
+    const cmd = `npx prisma migrate deploy --schema "${schema.replace(/\\/g, "/")}"`;
+    exec(
+      cmd,
+      {
+        cwd: repoRoot,
+        env: { ...process.env, DATABASE_URL: migrateDatabaseUrl() || process.env.DATABASE_URL },
+        timeout: 90_000,
+      },
+      (err, stdout, stderr) => {
+        if (stdout) console.log(stdout);
+        if (stderr) console.warn(stderr);
+        if (err) console.warn("migrate deploy failed", err.message);
+        resolve();
+      },
+    );
+  })
+    .then(() => bootstrapDb())
+    .catch((e) => console.warn("Admin bootstrap failed", e));
   const { startTelegramBot } = await import("./telegram/bot.js");
   void startTelegramBot().catch((e) => console.warn("Telegram bot failed to start", e));
 }

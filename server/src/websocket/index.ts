@@ -1,13 +1,13 @@
 import type { Server as HttpServer } from "http";
 import { Server } from "socket.io";
-import { allowedOrigins } from "../utils/origins.js";
+import { corsOrigin } from "../utils/origins.js";
 
 let io: Server | null = null;
 
 export function initSocket(httpServer: HttpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins(),
+      origin: (origin, cb) => corsOrigin(origin, cb),
       credentials: true,
     },
   });

@@ -212,9 +212,29 @@ export async function updateParticipant(req: Request, res: Response, next: NextF
 
 export async function deleteParticipant(req: Request, res: Response, next: NextFunction) {
   try {
-    await prisma.participant.delete({ where: { id: req.params.id } });
-    await audit({ userId: req.user?.userId, action: "PARTICIPANT_DELETED", entity: "Participant", entityId: req.params.id });
+    const existing = await prisma.participant.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new AppError("NOT_FOUND", "Участник не найден", 404);
+    await prisma.participant.delete({ where: { id: existing.id } });
+    await audit({ userId: req.user?.userId, action: "PARTICIPANT_DELETED", entity: "Participant", entityId: existing.id });
     res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function deleteAllParticipants(req: Request, res: Response, next: NextFunction) {
+  try {
+    const tournamentId = req.params.id;
+    const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw new AppError("NOT_FOUND", "Турнир не найден", 404);
+    const result = await prisma.participant.deleteMany({ where: { tournamentId } });
+    await audit({
+      userId: req.user?.userId,
+      action: "PARTICIPANTS_CLEARED",
+      entity: "Tournament",
+      entityId: tournamentId,
+    });
+    res.json({ ok: true, count: result.count });
   } catch (e) {
     next(e);
   }

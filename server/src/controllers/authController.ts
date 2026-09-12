@@ -5,7 +5,7 @@ import { AppError } from "../utils/errors.js";
 import { signToken } from "../middleware/auth.js";
 import { audit } from "../services/audit.js";
 import { adminGateSecret, hasValidGate, setGateCookie } from "../services/adminGate.js";
-import { ensureAdmin } from "../services/ensureAdmin.js";
+import { ENV_ADMIN_ID, ensureAdmin, envStr } from "../services/ensureAdmin.js";
 import { cookieOptions } from "../utils/origins.js";
 import { z } from "zod";
 
@@ -14,6 +14,13 @@ const loginSchema = z.object({
   password: z.string().min(1),
   gate: z.string().optional(),
 });
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
 
 export async function openGate(req: Request, res: Response, next: NextFunction) {
   try {
@@ -40,34 +47,47 @@ export async function inviteLink(req: Request, res: Response, next: NextFunction
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password, gate } = loginSchema.parse(req.body);
-    const strip = (s: string) => s.trim().replace(/^["']|["']$/g, "");
-    const envEmail = strip(String(process.env.ADMIN_EMAIL || ""));
-    const envPassword = strip(String(process.env.ADMIN_PASSWORD || ""));
-    const envOk = Boolean(envEmail && strip(email) === envEmail && password === envPassword);
+    const parsed = loginSchema.parse(req.body);
+    const email = parsed.email.trim();
+    const { password, gate } = parsed;
+    const envEmail = envStr("ADMIN_EMAIL");
+    const envPassword = envStr("ADMIN_PASSWORD");
+    const envOk = Boolean(envEmail && email === envEmail && password === envPassword);
     if (!envOk && !hasValidGate(req) && gate !== adminGateSecret()) {
       throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
     }
     setGateCookie(res);
-    if (envOk) {
-      try {
-        await Promise.race([
-          ensureAdmin(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("admin-timeout")), 8000)),
-        ]);
-      } catch { /* tables may still be migrating */ }
+
+    let user: { id: string; email: string; role: "ADMIN"; name: string | null; password?: string } | null = null;
+    try {
+      if (envOk) {
+        const created = await withTimeout(ensureAdmin(), 6000);
+        if (created) user = created;
+      }
+      if (!user) {
+        user = await withTimeout(prisma.user.findUnique({ where: { email } }), 6000);
+      }
+    } catch (e) {
+      console.warn("login db unavailable", e instanceof Error ? e.message : e);
     }
-    let user = await prisma.user.findUnique({ where: { email } });
+
     if (!user && envOk) {
-      try { user = await ensureAdmin(); } catch { /* ignore */ }
+      user = { id: ENV_ADMIN_ID, email: envEmail, role: "ADMIN", name: "Administrator" };
     }
     if (!user) throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
-    const ok = envOk || await bcrypt.compare(password, user.password);
+    const ok = envOk || (user.password ? await bcrypt.compare(password, user.password) : false);
     if (!ok) throw new AppError("INVALID_CREDENTIALS", "Неверный email или пароль", 401);
+
     const token = signToken({ userId: user.id, email: user.email, role: "ADMIN" });
     res.cookie("token", token, cookieOptions(7 * 24 * 60 * 60 * 1000));
-    await audit({ userId: user.id, action: "LOGIN", entity: "User", entityId: user.id, ip: req.ip });
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
+    await audit({
+      userId: user.id === ENV_ADMIN_ID ? undefined : user.id,
+      action: "LOGIN",
+      entity: "User",
+      entityId: user.id === ENV_ADMIN_ID ? undefined : user.id,
+      ip: req.ip,
+    });
+    res.json({ token, user: { id: user.id, email: user.email, role: "ADMIN", name: user.name } });
   } catch (e) {
     next(e);
   }
@@ -85,11 +105,21 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 export async function me(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) throw new AppError("UNAUTHORIZED", "Требуется авторизация", 401);
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      select: { id: true, email: true, role: true, name: true },
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { id: true, email: true, role: true, name: true },
+      });
+      if (user) {
+        res.json({ user });
+        return;
+      }
+    } catch (e) {
+      console.warn("me db", e instanceof Error ? e.message : e);
+    }
+    res.json({
+      user: { id: req.user.userId, email: req.user.email, role: "ADMIN", name: "Administrator" },
     });
-    res.json({ user });
   } catch (e) {
     next(e);
   }

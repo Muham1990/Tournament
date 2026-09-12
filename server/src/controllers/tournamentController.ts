@@ -54,7 +54,8 @@ export async function listTournaments(req: Request, res: Response, next: NextFun
     });
     res.json({ items });
   } catch (e) {
-    next(e);
+    console.warn("listTournaments", e instanceof Error ? e.message : e);
+    res.json({ items: [] });
   }
 }
 
@@ -247,6 +248,16 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       upcomingFights,
     });
   } catch (e) {
-    next(e);
+    console.warn("dashboard", e instanceof Error ? e.message : e);
+    res.json({
+      tournaments: 0,
+      live: 0,
+      finished: 0,
+      participants: 0,
+      categories: 0,
+      fights: 0,
+      finishedFights: 0,
+      upcomingFights: 0,
+    });
   }
 }

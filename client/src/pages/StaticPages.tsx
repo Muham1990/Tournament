@@ -76,7 +76,7 @@ export function ContactsPage() {
 export function PricingPage() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Array<{ id: string; name: string; price: string; description?: string; features: string[]; highlighted: boolean }>>([]);
-  useEffect(() => { MiscApi.pricing().then((r) => setItems(r.data.items)); }, []);
+  useEffect(() => { MiscApi.pricing().then((r) => setItems(r.data.items)).catch(() => setItems([])); }, []);
   return (
     <div className="price-page">
       <section className="price-hero">
@@ -128,10 +128,13 @@ export function LoginPage() {
       nav("/admin", { replace: true });
     } catch (e: unknown) {
       const ax = e as { code?: string; response?: { data?: { error?: string } } };
+      const status = (e as { response?: { status?: number; data?: { error?: string; code?: string } } }).response;
       if (ax.code === "ECONNABORTED" || ax.code === "ERR_NETWORK") {
         setErr("Сервер не отвечает. Подождите, пока kumite-arena-server станет Online.");
+      } else if (status?.status === 503 || status?.data?.code === "DB") {
+        setErr(status.data?.error || "База данных недоступна. Проверьте Neon / DATABASE_URL на Railway.");
       } else {
-        setErr(ax.response?.data?.error || t("login.error"));
+        setErr(status?.data?.error || t("login.error"));
       }
     } finally {
       setBusy(false);

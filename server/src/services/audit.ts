@@ -8,14 +8,19 @@ export async function audit(params: {
   details?: unknown;
   ip?: string | null;
 }) {
-  await prisma.auditLog.create({
-    data: {
-      userId: params.userId ?? undefined,
-      action: params.action,
-      entity: params.entity,
-      entityId: params.entityId ?? undefined,
-      details: params.details ? JSON.stringify(params.details) : undefined,
-      ip: params.ip ?? undefined,
-    },
-  });
+  try {
+    const userId = params.userId && params.userId !== "env-admin" ? params.userId : undefined;
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action: params.action,
+        entity: params.entity,
+        entityId: params.entityId ?? undefined,
+        details: params.details ? JSON.stringify(params.details) : undefined,
+        ip: params.ip ?? undefined,
+      },
+    });
+  } catch (e) {
+    console.warn("audit skipped", e instanceof Error ? e.message : e);
+  }
 }

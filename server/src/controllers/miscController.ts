@@ -71,7 +71,8 @@ export async function listCountries(_req: Request, res: Response, next: NextFunc
     const items = await prisma.country.findMany({ orderBy: { nameRu: "asc" } });
     res.json({ items });
   } catch (e) {
-    next(e);
+    console.warn("listCountries", e instanceof Error ? e.message : e);
+    res.json({ items: [] });
   }
 }
 
@@ -389,7 +390,20 @@ export async function getSettings(_req: Request, res: Response, next: NextFuncti
     });
     res.json({ item });
   } catch (e) {
-    next(e);
+    console.warn("getSettings", e instanceof Error ? e.message : e);
+    res.json({
+      item: {
+        id: "site",
+        siteName: "Kumite Arena",
+        tagline: "TOURNAMENT SYSTEM",
+        logoUrl: null,
+        email: "",
+        phone: "",
+        location: "",
+        heroTitle: null,
+        heroSub: null,
+      },
+    });
   }
 }
 
@@ -412,7 +426,8 @@ export async function listPricing(_req: Request, res: Response, next: NextFuncti
     const items = await prisma.pricingPlan.findMany({ orderBy: { sortOrder: "asc" } });
     res.json({ items: items.map((p) => ({ ...p, features: JSON.parse(p.features) as string[] })) });
   } catch (e) {
-    next(e);
+    console.warn("listPricing", e instanceof Error ? e.message : e);
+    res.json({ items: [] });
   }
 }
 

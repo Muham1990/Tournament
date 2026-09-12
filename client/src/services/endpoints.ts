@@ -99,6 +99,7 @@ export const ParticipantApi = {
   create: (tid: string, fd: FormData) => api.post(`/tournaments/${tid}/participants`, fd),
   update: (id: string, fd: FormData) => api.put(`/participants/${id}`, fd),
   remove: (id: string) => api.delete(`/participants/${id}`),
+  removeAll: (tid: string) => api.delete(`/tournaments/${tid}/participants`),
   get: (id: string) => api.get<{ item: Participant }>(`/participants/${id}`),
 };
 

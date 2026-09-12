@@ -24,6 +24,7 @@ apiRouter.get("/dashboard", requireAdmin, t.dashboard);
 
 apiRouter.get("/tournaments/:id/participants", p.listParticipants);
 apiRouter.post("/tournaments/:id/participants", requireAdmin, upload.single("photo"), p.createParticipant);
+apiRouter.delete("/tournaments/:id/participants", requireAdmin, p.deleteAllParticipants);
 apiRouter.get("/participants/:id", p.getParticipant);
 apiRouter.put("/participants/:id", requireAdmin, upload.single("photo"), p.updateParticipant);
 apiRouter.delete("/participants/:id", requireAdmin, p.deleteParticipant);
