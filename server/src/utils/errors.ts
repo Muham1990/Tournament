@@ -29,10 +29,14 @@ export function errorHandler(
   const prismaName = (err as { name?: string }).name || "";
   if ((typeof prismaCode === "string" && prismaCode.startsWith("P")) || prismaName.includes("Prisma")) {
     console.error(err);
-    res.status(503).json({
-      error: "База данных недоступна. Проверьте DATABASE_URL и миграции на Railway.",
-      code: "DB",
-    });
+    const connect = prismaCode === "P1001" || prismaCode === "P1017" || prismaCode === "P1000";
+    const missing = prismaCode === "P2021" || prismaCode === "P2022";
+    const error = connect
+      ? "Нет связи с Neon. В DATABASE_URL уберите channel_binding=require и нажмите Resume в Neon."
+      : missing
+        ? "Таблицы ещё не созданы. Подождите минуту после деплоя или проверьте логи migrate."
+        : "База данных недоступна. Проверьте DATABASE_URL на Railway и что Neon не на паузе.";
+    res.status(503).json({ error, code: "DB", prisma: prismaCode || prismaName });
     return;
   }
   console.error(err);

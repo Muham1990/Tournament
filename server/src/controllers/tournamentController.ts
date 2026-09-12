@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { prisma } from "../utils/prisma.js";
+import { prisma, withDbRetry } from "../utils/prisma.js";
 import { AppError } from "../utils/errors.js";
 import { audit } from "../services/audit.js";
 import { emitTournament, Events } from "../websocket/index.js";
@@ -84,8 +84,6 @@ export async function createTournament(req: Request, res: Response, next: NextFu
   try {
     const data = tournamentSchema.parse(req.body);
     let slug = data.slug || slugify(data.title);
-    const exists = await prisma.tournament.findUnique({ where: { slug } });
-    if (exists) slug = `${slug}-${Date.now().toString(36)}`;
     const dateStart = new Date(data.dateStart);
     const dateEnd = new Date(data.dateEnd);
     if (Number.isNaN(dateStart.getTime()) || Number.isNaN(dateEnd.getTime())) {
@@ -95,42 +93,47 @@ export async function createTournament(req: Request, res: Response, next: NextFu
       throw new AppError("VALIDATION", "Дата окончания не может быть раньше даты начала", 400);
     }
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
-    const countryId = await resolveCountryId(data.countryId);
-    if (!countryId) throw new AppError("VALIDATION", "Выберите страну проведения", 400);
-    const item = await prisma.tournament.create({
-      data: {
-        title: data.title,
-        slug,
-        description: data.description,
-        dateStart,
-        dateEnd,
-        timeStart: data.timeStart,
-        timeEnd: data.timeEnd,
-        countryId,
-        city: data.city,
-        address: data.address,
-        organizer: data.organizer,
-        email: data.email,
-        phone: data.phone,
-        venue: data.venue,
-        rules: data.rules,
-        regulations: data.regulations,
-        registrationInfo: data.registrationInfo,
-        tatamiCount: data.tatamiCount ?? 1,
-        registrationStart: data.registrationStart ? new Date(data.registrationStart) : undefined,
-        registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : undefined,
-        imageUrl,
-        status: "DRAFT",
-        settings: { create: {} },
-      },
-    });
-    const count = data.tatamiCount ?? 1;
-    await prisma.tatami.createMany({
-      data: Array.from({ length: count }, (_, i) => ({
-        tournamentId: item.id,
-        name: `Tatami ${i + 1}`,
-        number: i + 1,
-      })),
+    const item = await withDbRetry(async () => {
+      const exists = await prisma.tournament.findUnique({ where: { slug } });
+      if (exists) slug = `${slug}-${Date.now().toString(36)}`;
+      const countryId = await resolveCountryId(data.countryId);
+      if (!countryId) throw new AppError("VALIDATION", "Выберите страну проведения", 400);
+      const created = await prisma.tournament.create({
+        data: {
+          title: data.title,
+          slug,
+          description: data.description,
+          dateStart,
+          dateEnd,
+          timeStart: data.timeStart,
+          timeEnd: data.timeEnd,
+          countryId,
+          city: data.city,
+          address: data.address,
+          organizer: data.organizer,
+          email: data.email,
+          phone: data.phone,
+          venue: data.venue,
+          rules: data.rules,
+          regulations: data.regulations,
+          registrationInfo: data.registrationInfo,
+          tatamiCount: data.tatamiCount ?? 1,
+          registrationStart: data.registrationStart ? new Date(data.registrationStart) : undefined,
+          registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : undefined,
+          imageUrl,
+          status: "DRAFT",
+          settings: { create: {} },
+        },
+      });
+      const count = data.tatamiCount ?? 1;
+      await prisma.tatami.createMany({
+        data: Array.from({ length: count }, (_, i) => ({
+          tournamentId: created.id,
+          name: `Tatami ${i + 1}`,
+          number: i + 1,
+        })),
+      });
+      return created;
     });
     await audit({ userId: req.user?.userId, action: "TOURNAMENT_CREATED", entity: "Tournament", entityId: item.id });
     res.status(201).json({ item });
