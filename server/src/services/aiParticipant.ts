@@ -31,6 +31,10 @@ export function missingFields(p: ParsedAthlete) {
 export async function resolveCountry(name: string | null) {
   const q = name?.trim();
   if (!q) return null;
+  const { ensureCountries, resolveCountryId } = await import("./countries.js");
+  await ensureCountries().catch(() => undefined);
+  const id = await resolveCountryId(q);
+  if (id) return prisma.country.findUnique({ where: { id } });
   const items = await prisma.country.findMany();
   const low = q.toLowerCase();
   const exact = items.find((c) =>
@@ -71,6 +75,7 @@ export async function createFromAi(opts: {
   countryId: string;
   sex?: Sex;
   forceDuplicate?: boolean;
+  photoUrl?: string;
 }) {
   const tournament = await prisma.tournament.findUnique({ where: { id: opts.tournamentId } });
   if (!tournament) throw new AppError("NOT_FOUND", "Турнир не найден", 404);
@@ -93,6 +98,7 @@ export async function createFromAi(opts: {
       countryId: opts.countryId,
       weight: opts.weight,
       categoryId: category.id,
+      photoUrl: opts.photoUrl,
     },
     include: { country: true, category: true },
   });

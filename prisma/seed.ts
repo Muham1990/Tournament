@@ -1,60 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { COUNTRY_CATALOG as COUNTRIES } from "../server/src/services/countries.js";
 
 const prisma = new PrismaClient();
-
-const COUNTRIES: Array<{ code: string; name: string; nameRu: string; nameTg: string; flag: string }> = [
-  { code: "TJ", name: "Tajikistan", nameRu: "Таджикистан", nameTg: "Тоҷикистон", flag: "🇹🇯" },
-  { code: "RU", name: "Russia", nameRu: "Россия", nameTg: "Русия", flag: "🇷🇺" },
-  { code: "KZ", name: "Kazakhstan", nameRu: "Казахстан", nameTg: "Қазоқистон", flag: "🇰🇿" },
-  { code: "UZ", name: "Uzbekistan", nameRu: "Узбекистан", nameTg: "Ӯзбекистон", flag: "🇺🇿" },
-  { code: "KG", name: "Kyrgyzstan", nameRu: "Кыргызстан", nameTg: "Қирғизистон", flag: "🇰🇬" },
-  { code: "TM", name: "Turkmenistan", nameRu: "Туркменистан", nameTg: "Туркманистон", flag: "🇹🇲" },
-  { code: "TR", name: "Turkey", nameRu: "Турция", nameTg: "Туркия", flag: "🇹🇷" },
-  { code: "IR", name: "Iran", nameRu: "Иран", nameTg: "Эрон", flag: "🇮🇷" },
-  { code: "AF", name: "Afghanistan", nameRu: "Афганистан", nameTg: "Афғонистон", flag: "🇦🇫" },
-  { code: "CN", name: "China", nameRu: "Китай", nameTg: "Чин", flag: "🇨🇳" },
-  { code: "JP", name: "Japan", nameRu: "Япония", nameTg: "Ҷопон", flag: "🇯🇵" },
-  { code: "KR", name: "South Korea", nameRu: "Южная Корея", nameTg: "Кореяи Ҷанубӣ", flag: "🇰🇷" },
-  { code: "DE", name: "Germany", nameRu: "Германия", nameTg: "Олмон", flag: "🇩🇪" },
-  { code: "FR", name: "France", nameRu: "Франция", nameTg: "Фаронса", flag: "🇫🇷" },
-  { code: "IT", name: "Italy", nameRu: "Италия", nameTg: "Италия", flag: "🇮🇹" },
-  { code: "ES", name: "Spain", nameRu: "Испания", nameTg: "Испания", flag: "🇪🇸" },
-  { code: "GB", name: "United Kingdom", nameRu: "Великобритания", nameTg: "Британияи Кабир", flag: "🇬🇧" },
-  { code: "US", name: "United States", nameRu: "США", nameTg: "ИМА", flag: "🇺🇸" },
-  { code: "UA", name: "Ukraine", nameRu: "Украина", nameTg: "Украина", flag: "🇺🇦" },
-  { code: "PL", name: "Poland", nameRu: "Польша", nameTg: "Лаҳистон", flag: "🇵🇱" },
-  { code: "RO", name: "Romania", nameRu: "Румыния", nameTg: "Руминия", flag: "🇷🇴" },
-  { code: "BG", name: "Bulgaria", nameRu: "Болгария", nameTg: "Булғористон", flag: "🇧🇬" },
-  { code: "GE", name: "Georgia", nameRu: "Грузия", nameTg: "Гурҷистон", flag: "🇬🇪" },
-  { code: "AM", name: "Armenia", nameRu: "Армения", nameTg: "Арманистон", flag: "🇦🇲" },
-  { code: "AZ", name: "Azerbaijan", nameRu: "Азербайджан", nameTg: "Озарбойҷон", flag: "🇦🇿" },
-  { code: "BY", name: "Belarus", nameRu: "Беларусь", nameTg: "Беларус", flag: "🇧🇾" },
-  { code: "MD", name: "Moldova", nameRu: "Молдова", nameTg: "Молдова", flag: "🇲🇩" },
-  { code: "LT", name: "Lithuania", nameRu: "Литва", nameTg: "Литва", flag: "🇱🇹" },
-  { code: "LV", name: "Latvia", nameRu: "Латвия", nameTg: "Латвия", flag: "🇱🇻" },
-  { code: "EE", name: "Estonia", nameRu: "Эстония", nameTg: "Эстония", flag: "🇪🇪" },
-  { code: "NL", name: "Netherlands", nameRu: "Нидерланды", nameTg: "Нидерланд", flag: "🇳🇱" },
-  { code: "BE", name: "Belgium", nameRu: "Бельгия", nameTg: "Белгия", flag: "🇧🇪" },
-  { code: "AT", name: "Austria", nameRu: "Австрия", nameTg: "Австрия", flag: "🇦🇹" },
-  { code: "CH", name: "Switzerland", nameRu: "Швейцария", nameTg: "Швейтсария", flag: "🇨🇭" },
-  { code: "CZ", name: "Czechia", nameRu: "Чехия", nameTg: "Чехия", flag: "🇨🇿" },
-  { code: "SK", name: "Slovakia", nameRu: "Словакия", nameTg: "Словакия", flag: "🇸🇰" },
-  { code: "HU", name: "Hungary", nameRu: "Венгрия", nameTg: "Маҷористон", flag: "🇭🇺" },
-  { code: "RS", name: "Serbia", nameRu: "Сербия", nameTg: "Сербия", flag: "🇷🇸" },
-  { code: "HR", name: "Croatia", nameRu: "Хорватия", nameTg: "Хорватия", flag: "🇭🇷" },
-  { code: "GR", name: "Greece", nameRu: "Греция", nameTg: "Юнон", flag: "🇬🇷" },
-  { code: "PT", name: "Portugal", nameRu: "Португалия", nameTg: "Португалия", flag: "🇵🇹" },
-  { code: "EG", name: "Egypt", nameRu: "Египет", nameTg: "Миср", flag: "🇪🇬" },
-  { code: "MA", name: "Morocco", nameRu: "Марокко", nameTg: "Марокаш", flag: "🇲🇦" },
-  { code: "TN", name: "Tunisia", nameRu: "Тунис", nameTg: "Тунис", flag: "🇹🇳" },
-  { code: "IN", name: "India", nameRu: "Индия", nameTg: "Ҳиндустон", flag: "🇮🇳" },
-  { code: "PK", name: "Pakistan", nameRu: "Пакистан", nameTg: "Покистон", flag: "🇵🇰" },
-  { code: "BR", name: "Brazil", nameRu: "Бразилия", nameTg: "Бразилия", flag: "🇧🇷" },
-  { code: "AR", name: "Argentina", nameRu: "Аргентина", nameTg: "Аргентина", flag: "🇦🇷" },
-  { code: "CA", name: "Canada", nameRu: "Канада", nameTg: "Канада", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", nameRu: "Австралия", nameTg: "Австралия", flag: "🇦🇺" },
-];
 
 async function main() {
   const email = process.env.ADMIN_EMAIL;

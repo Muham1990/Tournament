@@ -3,6 +3,7 @@ import { prisma } from "../utils/prisma.js";
 import { AppError } from "../utils/errors.js";
 import { ageOnDate, rankIndex } from "../utils/age.js";
 import { audit } from "../services/audit.js";
+import { resolveCountryId } from "../services/countries.js";
 import { z } from "zod";
 
 const emptyToUndef = (v: unknown) => (v === "" || v === undefined || v === null ? undefined : v);
@@ -115,6 +116,8 @@ export async function createParticipant(req: Request, res: Response, next: NextF
     const data = participantSchema.parse(req.body);
     const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new AppError("NOT_FOUND", "Турнир не найден", 404);
+    const countryId = await resolveCountryId(data.countryId);
+    if (!countryId) throw new AppError("VALIDATION", "Выберите страну", 400);
 
     const birthDate = new Date(data.birthDate);
     const duplicate = await prisma.participant.findFirst({
@@ -123,7 +126,7 @@ export async function createParticipant(req: Request, res: Response, next: NextF
         firstName: { equals: data.firstName, mode: "insensitive" },
         lastName: { equals: data.lastName, mode: "insensitive" },
         birthDate,
-        countryId: data.countryId,
+        countryId,
       },
     });
     if (duplicate && !data.forceDuplicate) {
@@ -155,7 +158,7 @@ export async function createParticipant(req: Request, res: Response, next: NextF
         lastName: data.lastName,
         birthDate,
         gender: data.gender,
-        countryId: data.countryId || undefined,
+        countryId,
         city: data.city,
         clubId: data.clubId || undefined,
         school: data.school,
@@ -191,6 +194,7 @@ export async function updateParticipant(req: Request, res: Response, next: NextF
     const data = participantSchema.partial().parse(req.body);
     const { forceDuplicate: _fd, overrideOk: _ok, ...fields } = data;
     const photoUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const countryId = data.countryId !== undefined ? await resolveCountryId(data.countryId) : undefined;
     const item = await prisma.participant.update({
       where: { id: existing.id },
       data: {
@@ -198,7 +202,7 @@ export async function updateParticipant(req: Request, res: Response, next: NextF
         birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
         clubId: data.clubId || undefined,
         categoryId: data.categoryId || undefined,
-        countryId: data.countryId || undefined,
+        countryId,
         ...(photoUrl ? { photoUrl } : {}),
       },
       include: { country: true, club: true, category: true },

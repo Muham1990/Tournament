@@ -16,6 +16,7 @@ import { fmtDate } from "../../utils";
 import { useToast } from "../../hooks/useToast";
 import { useTournamentSocket } from "../../hooks/useTournamentSocket";
 import { mediaUrl } from "../../lib/config";
+import { useCountries } from "../../hooks/useCountries";
 
 export function AdminDashboard() {
   const { t } = useTranslation();
@@ -94,16 +95,22 @@ export function AdminTournamentForm() {
   const { t } = useTranslation();
   const { id } = useParams();
   const nav = useNavigate();
-  const [countries, setCountries] = useState<Country[]>([]);
+  const { countries, defaultId } = useCountries();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [coverErr, setCoverErr] = useState("");
+  const [saveErr, setSaveErr] = useState("");
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     title: "", slug: "", dateStart: "", dateEnd: "", timeStart: "09:00", timeEnd: "18:00",
     countryId: "", city: "", address: "", organizer: "", email: "", phone: "", venue: "",
     description: "", rules: "", regulations: "", registrationInfo: "", tatamiCount: "2",
   });
-  useEffect(() => { CountryApi.list().then((r) => setCountries(r.data.items)); }, []);
+  useEffect(() => {
+    if ((!id || id === "new") && defaultId) {
+      setForm((f) => (f.countryId ? f : { ...f, countryId: defaultId }));
+    }
+  }, [id, defaultId]);
   useEffect(() => {
     if (!id || id === "new") return;
     TournamentApi.get(id).then((r) => {
@@ -118,6 +125,9 @@ export function AdminTournamentForm() {
         registrationInfo: it.registrationInfo || "", tatamiCount: String(it.tatamiCount || 1),
       });
       setPreview(it.imageUrl || "");
+    }).catch((e: unknown) => {
+      const ax = e as { response?: { data?: { error?: string } } };
+      setSaveErr(ax.response?.data?.error || t("errors.save"));
     });
   }, [id]);
 
@@ -133,13 +143,38 @@ export function AdminTournamentForm() {
   }
 
   async function save() {
-    const fd = asForm(form, file, "image");
-    if (!id || id === "new") {
-      const r = await TournamentApi.create(fd);
-      nav(`/admin/tournament/${r.data.item.id}`);
-    } else {
-      await TournamentApi.update(id, fd);
-      nav(`/admin/tournament/${id}`);
+    setSaveErr("");
+    if (!form.title.trim()) {
+      setSaveErr(t("form.title"));
+      return;
+    }
+    if (!form.dateStart || !form.dateEnd) {
+      setSaveErr(t("errors.dates"));
+      return;
+    }
+    if (form.dateEnd < form.dateStart) {
+      setSaveErr(t("errors.dateOrder"));
+      return;
+    }
+    if (!form.countryId) {
+      setSaveErr(t("errors.country"));
+      return;
+    }
+    setSaving(true);
+    try {
+      const fd = asForm(form, file, "image");
+      if (!id || id === "new") {
+        const r = await TournamentApi.create(fd);
+        nav(`/admin/tournament/${r.data.item.id}`);
+      } else {
+        await TournamentApi.update(id, fd);
+        nav(`/admin/tournament/${id}`);
+      }
+    } catch (e: unknown) {
+      const ax = e as { response?: { data?: { error?: string } } };
+      setSaveErr(ax.response?.data?.error || t("errors.save"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -186,7 +221,8 @@ export function AdminTournamentForm() {
           {coverErr && <p className="err">{coverErr}</p>}
         </div>
       </div>
-      <button className="btn" style={{ marginTop: 16 }} onClick={() => void save()}>{t("admin.save")}</button>
+      {saveErr && <p className="err">{saveErr}</p>}
+      <button className="btn" style={{ marginTop: 16 }} disabled={saving} onClick={() => void save()}>{t("admin.save")}</button>
     </div>
   );
 }
@@ -199,7 +235,10 @@ export function AdminTournamentHub() {
   const [tab, setTab] = useState("participants");
   const [err, setErr] = useState("");
   const [coverErr, setCoverErr] = useState("");
-  const loadT = () => TournamentApi.get(id).then((r) => setItem(r.data.item));
+  const loadT = () => TournamentApi.get(id).then((r) => setItem(r.data.item)).catch((e: unknown) => {
+    const ax = e as { response?: { data?: { error?: string } } };
+    setErr(ax.response?.data?.error || t("errors.save"));
+  });
   useEffect(() => { void loadT(); }, [id]);
 
   async function start() {
@@ -214,7 +253,7 @@ export function AdminTournamentHub() {
     }
   }
 
-  if (!item) return null;
+  if (!item) return err ? <p className="err">{err}</p> : <p>{t("common.loading")}</p>;
   const tabs = ["participants", "categories", "draws", "fights", "schedule", "tatami", "results", "officials", "videos", "stats"] as const;
 
   async function onHubCover(f: File | null) {
@@ -224,8 +263,13 @@ export function AdminTournamentHub() {
       return;
     }
     setCoverErr("");
-    await TournamentApi.update(id, asForm({}, f, "image"));
-    loadT();
+    try {
+      await TournamentApi.update(id, asForm({}, f, "image"));
+      loadT();
+    } catch (e: unknown) {
+      const ax = e as { response?: { data?: { error?: string } } };
+      setCoverErr(ax.response?.data?.error || t("errors.save"));
+    }
   }
 
   return (
@@ -310,6 +354,7 @@ function AdminParts({ tid }: { tid: string }) {
 
   return (
     <div>
+      <p className="muted">{t("p.needCategory")}</p>
       <div className="btn-row">
         <button className="btn" onClick={() => { setEdit(null); setOpen(true); }}>{t("p.add")}</button>
         {items.length > 0 && (
@@ -614,7 +659,7 @@ export function AdminCountries() {
   const { t } = useTranslation();
   const [items, setItems] = useState<Country[]>([]);
   const [form, setForm] = useState({ name: "", nameRu: "", nameTg: "", code: "", flag: "" });
-  const load = () => CountryApi.list().then((r) => setItems(r.data.items));
+  const load = () => CountryApi.list().then((r) => setItems(r.data.items)).catch(() => setItems([]));
   useEffect(() => { void load(); }, []);
   return (
     <div>

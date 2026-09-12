@@ -10,6 +10,10 @@ import {
   transcribeAudio,
 } from "../services/aiProviders.js";
 import { createFromAi, prepareAthlete, type ParsedAthlete } from "../services/aiParticipant.js";
+import { resolveCountryId } from "../services/countries.js";
+import { uploadRoot } from "../middleware/upload.js";
+import fs from "fs";
+import path from "path";
 
 function logAi(req: Request, action: string, status: string, extra?: unknown) {
   void audit({
@@ -75,7 +79,15 @@ function num(v: unknown) {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-async function commitReady(req: Request, prepared: Awaited<ReturnType<typeof prepareAthlete>>, force = false) {
+function saveScanPhoto(file: Express.Multer.File) {
+  const ext = file.mimetype === "image/png" ? ".png" : file.mimetype === "image/webp" ? ".webp" : ".jpg";
+  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
+  if (!fs.existsSync(uploadRoot)) fs.mkdirSync(uploadRoot, { recursive: true });
+  fs.writeFileSync(path.join(uploadRoot, name), file.buffer);
+  return `/uploads/${name}`;
+}
+
+async function commitReady(req: Request, prepared: Awaited<ReturnType<typeof prepareAthlete>>, force = false, photoUrl?: string) {
   if (!prepared.ready || !prepared.countryId || prepared.age == null || prepared.weight == null || !prepared.firstName || !prepared.lastName) {
     return { created: false, ...prepared, askField: prepared.missing[0] || null, ask: prepared.missing[0] ? askPrompt(prepared.missing[0]) : null };
   }
@@ -88,6 +100,7 @@ async function commitReady(req: Request, prepared: Awaited<ReturnType<typeof pre
     countryId: prepared.countryId,
     sex: prepared.sex,
     forceDuplicate: force,
+    photoUrl,
   });
   if (!result.created) {
     logAi(req, "AI_CREATE", "DUPLICATE");
@@ -136,6 +149,7 @@ export async function scanParticipants(req: Request, res: Response, next: NextFu
     }
 
     const force = parseFallback(req.body?.forceDuplicate);
+    const photoUrl = raw.length === 1 ? saveScanPhoto(file) : undefined;
     const results = [];
     for (const row of raw) {
       const prepared = await prepareAthlete({
@@ -147,7 +161,7 @@ export async function scanParticipants(req: Request, res: Response, next: NextFu
         gender: row.gender,
       }, tournamentId);
       const extraWarn = Array.isArray(row.warnings) ? row.warnings : [];
-      const committed = await commitReady(req, { ...prepared, warnings: [...prepared.warnings, ...extraWarn] }, force);
+      const committed = await commitReady(req, { ...prepared, warnings: [...prepared.warnings, ...extraWarn] }, force, photoUrl);
       results.push(committed);
     }
 
@@ -242,9 +256,11 @@ export async function commitAiParticipant(req: Request, res: Response, next: Nex
       country: String(req.body?.country || "") || null,
       gender: typeof req.body?.gender === "string" ? req.body.gender : null,
     }, tournamentId);
-    if (req.body?.countryId && typeof req.body.countryId === "string") {
-      prepared.countryId = req.body.countryId;
-      prepared.ready = prepared.missing.filter((m) => m !== "country").length === 0 && Boolean(prepared.countryId);
+    const countryId = await resolveCountryId(String(req.body?.country || req.body?.countryId || ""));
+    if (countryId) {
+      prepared.countryId = countryId;
+      prepared.missing = prepared.missing.filter((m) => m !== "country");
+      prepared.ready = prepared.missing.length === 0 && Boolean(prepared.countryId);
     }
     const result = await commitReady(req, prepared, parseFallback(req.body?.forceDuplicate));
     res.json(result);

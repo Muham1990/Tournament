@@ -3,6 +3,7 @@ import { prisma } from "../utils/prisma.js";
 import { AppError } from "../utils/errors.js";
 import { audit } from "../services/audit.js";
 import { emitTournament, Events } from "../websocket/index.js";
+import { resolveCountryId } from "../services/countries.js";
 import { z } from "zod";
 
 const tournamentSchema = z.object({
@@ -85,17 +86,27 @@ export async function createTournament(req: Request, res: Response, next: NextFu
     let slug = data.slug || slugify(data.title);
     const exists = await prisma.tournament.findUnique({ where: { slug } });
     if (exists) slug = `${slug}-${Date.now().toString(36)}`;
+    const dateStart = new Date(data.dateStart);
+    const dateEnd = new Date(data.dateEnd);
+    if (Number.isNaN(dateStart.getTime()) || Number.isNaN(dateEnd.getTime())) {
+      throw new AppError("VALIDATION", "Укажите даты турнира", 400);
+    }
+    if (dateEnd < dateStart) {
+      throw new AppError("VALIDATION", "Дата окончания не может быть раньше даты начала", 400);
+    }
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const countryId = await resolveCountryId(data.countryId);
+    if (!countryId) throw new AppError("VALIDATION", "Выберите страну проведения", 400);
     const item = await prisma.tournament.create({
       data: {
         title: data.title,
         slug,
         description: data.description,
-        dateStart: new Date(data.dateStart),
-        dateEnd: new Date(data.dateEnd),
+        dateStart,
+        dateEnd,
         timeStart: data.timeStart,
         timeEnd: data.timeEnd,
-        countryId: data.countryId || undefined,
+        countryId,
         city: data.city,
         address: data.address,
         organizer: data.organizer,
@@ -134,10 +145,12 @@ export async function updateTournament(req: Request, res: Response, next: NextFu
     if (!existing) throw new AppError("NOT_FOUND", "Турнир не найден", 404);
     const data = tournamentSchema.partial().parse(req.body);
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    const countryId = data.countryId !== undefined ? await resolveCountryId(data.countryId) : undefined;
     const item = await prisma.tournament.update({
       where: { id: existing.id },
       data: {
         ...data,
+        countryId,
         dateStart: data.dateStart ? new Date(data.dateStart) : undefined,
         dateEnd: data.dateEnd ? new Date(data.dateEnd) : undefined,
         registrationStart: data.registrationStart ? new Date(data.registrationStart) : undefined,

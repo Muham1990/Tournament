@@ -117,7 +117,7 @@ export function PhotoScanModal({
 }) {
   const { t } = useTranslation();
   const [provider, setProvider] = useState<AiProviderName>("gemini");
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(true);
   const [step, setStep] = useState<"pick" | "progress" | "done">("pick");
   const [progress, setProgress] = useState(10);
   const [rows, setRows] = useState<AiAthleteResult[]>([]);
@@ -268,7 +268,7 @@ export function PhotoScanModal({
                     <label className="field">{t("form.lastName")}<input value={row.lastName || ""} onChange={(e) => setRow(i, { lastName: e.target.value })} /></label>
                     <label className="field">{t("p.age")}<input value={row.age ?? ""} onChange={(e) => setRow(i, { age: e.target.value === "" ? null : Number(e.target.value) })} /></label>
                     <label className="field">{t("form.weight")}<input value={row.weight ?? ""} onChange={(e) => setRow(i, { weight: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-                    <label className="field">{t("ai.country")}<input value={row.country || ""} onChange={(e) => setRow(i, { country: e.target.value })} /></label>
+                    <label className="field">{t("ai.country")}<input value={row.country || ""} onChange={(e) => setRow(i, { country: e.target.value, countryId: undefined })} /></label>
                   </div>
                   {row.warnings.map((w) => <p key={w} className="err">⚠️ {w}</p>)}
                   {row.duplicate && <p className="err">{t("ai.duplicate")}{row.existing ? `: ${row.existing}` : ""}</p>}
@@ -300,7 +300,7 @@ export function VoiceFill({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<AiProviderName>("gemini");
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(true);
   const [phase, setPhase] = useState<"idle" | "listen" | "process" | "result">("idle");
   const [draft, setDraft] = useState<AiAthleteResult | null>(null);
   const [err, setErr] = useState("");
@@ -414,11 +414,11 @@ export function VoiceFill({
                 <label className="field">{t("form.lastName")}<input value={draft.lastName || ""} onChange={(e) => setDraft({ ...draft, lastName: e.target.value })} /></label>
                 <label className="field">{t("p.age")}<input value={draft.age ?? ""} onChange={(e) => setDraft({ ...draft, age: e.target.value === "" ? null : Number(e.target.value) })} /></label>
                 <label className="field">{t("form.weight")}<input value={draft.weight ?? ""} onChange={(e) => setDraft({ ...draft, weight: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-                <label className="field">{t("ai.country")}<input value={draft.country || ""} onChange={(e) => setDraft({ ...draft, country: e.target.value })} /></label>
+                <label className="field">{t("ai.country")}<input value={draft.country || ""} onChange={(e) => setDraft({ ...draft, country: e.target.value, countryId: undefined })} /></label>
               </div>
               <div className="btn-row" style={{ marginTop: 12 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => void listen(draft.askField || undefined)}>{t("ai.again")}</button>
-                <button type="button" className="btn btn-ghost" onClick={() => void commit(false)}>{t("ai.edit")}</button>
+                <button type="button" className="btn" onClick={() => void commit(false)}>{t("ai.ok")}</button>
                 {draft.duplicate && <button type="button" className="btn" onClick={() => void commit(true)}>{t("ai.anyway")}</button>}
               </div>
             </>
@@ -450,7 +450,7 @@ export function TournamentVoiceFill({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<AiProviderName>("gemini");
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(true);
   const [phase, setPhase] = useState<"idle" | "listen" | "process">("idle");
   const [err, setErr] = useState("");
   const [typed, setTyped] = useState("");
@@ -568,7 +568,7 @@ export function AiAssistantDock() {
   const loc = useLocation();
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<AiProviderName>("gemini");
-  const [fallback, setFallback] = useState(false);
+  const [fallback, setFallback] = useState(true);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);

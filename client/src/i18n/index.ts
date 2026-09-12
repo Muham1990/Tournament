@@ -75,6 +75,7 @@ const ru = {
     all: "ВСЕ",
     removeConfirm: "Удалить участника",
     removeAllConfirm: "Удалить всех участников этого турнира?",
+    needCategory: "Без категории турнир нельзя запустить",
   },
   draw: {
     empty: "Сетка ещё не создана",
@@ -232,6 +233,12 @@ const ru = {
   empty: { categories: "Категории пока не созданы", clubs: "Клубы пока не созданы", generic: "Нет данных" },
   errors: {
     name: "Введите имя",
+    country: "Выберите страну проведения",
+    dates: "Укажите даты турнира",
+    dateOrder: "Дата окончания не может быть раньше даты начала",
+    lastName: "Введите фамилию",
+    birthDate: "Укажите дату рождения",
+    save: "Не удалось сохранить. Проверьте поля и попробуйте ещё раз.",
     category: "Выберите категорию",
     duplicate: "Возможный дубликат участника.",
     anyway: "ВСЁ РАВНО ДОБАВИТЬ",
@@ -328,7 +335,7 @@ const en: typeof ru = {
     city: "City", address: "Address", organizer: "Organizer", email: "Email", phone: "Phone", venue: "Venue",
     rules: "Rules", regulations: "Regulations", registration: "Registration info", status: "Status", description: "Description",
   },
-  p: { search: "Search", searchCat: "Search category", category: "Category", empty: "No participants yet", n: "#", athlete: "Participant", age: "Age", rank: "Class", school: "School", add: "+ ADD PARTICIPANT", clubs: "Clubs", remove: "DELETE", all: "ALL", removeConfirm: "Delete participant", removeAllConfirm: "Delete all participants in this tournament?" },
+  p: { search: "Search", searchCat: "Search category", category: "Category", empty: "No participants yet", n: "#", athlete: "Participant", age: "Age", rank: "Class", school: "School", add: "+ ADD PARTICIPANT", clubs: "Clubs", remove: "DELETE", all: "ALL", removeConfirm: "Delete participant", removeAllConfirm: "Delete all participants in this tournament?", needCategory: "A category is required to start the tournament" },
   draw: {
     empty: "Bracket has not been created yet", open: "OPEN BRACKET", generate: "CREATE BRACKET", regenerate: "REGENERATE BRACKET",
     current: "SHOW CURRENT FIGHT", fit: "FIT TO SCREEN", bye: "BYE", advancedBye: "ADVANCED BYE", winner: "WINNER", eliminated: "ELIMINATED",
@@ -397,7 +404,7 @@ const en: typeof ru = {
   gender: { BOYS: "Boys", GIRLS: "Girls", MEN: "Men", WOMEN: "Women", MIXED: "Mixed" },
   status: { DRAFT: "DRAFT", REGISTRATION: "REGISTRATION", READY: "READY", LIVE: "LIVE", FINISHED: "FINISHED", ARCHIVED: "ARCHIVED" },
   empty: { categories: "No categories yet", clubs: "No clubs yet", generic: "No data" },
-  errors: { name: "Enter first name", category: "Select a category", duplicate: "Possible duplicate participant.", anyway: "ADD ANYWAY", age: "Athlete does not match the age category." },
+  errors: { name: "Enter first name", country: "Select the host country", dates: "Enter tournament dates", dateOrder: "End date cannot be before the start date", lastName: "Enter last name", birthDate: "Enter date of birth", save: "Could not save. Check the fields and try again.", category: "Select a category", duplicate: "Possible duplicate participant.", anyway: "ADD ANYWAY", age: "Athlete does not match the age category." },
   common: { loading: "Loading...", all: "All", yes: "Yes", no: "No" },
   ai: {
     scan: "📷 Add participant from photo",
@@ -489,7 +496,7 @@ const tg: typeof ru = {
     city: "Шаҳр", address: "Суроға", organizer: "Ташкилкунанда", email: "Email", phone: "Телефон", venue: "Макон",
     rules: "Қоидаҳо", regulations: "Низомнома", registration: "Бақайдгирӣ", status: "Ҳолат", description: "Тавсиф",
   },
-  p: { search: "Search", searchCat: "Ҷустуҷӯи категория", category: "Категория", empty: "Иштирокчиён ҳанӯз илова нашудаанд", n: "№", athlete: "Иштирокчӣ", age: "Синну сол", rank: "Дараҷа", school: "Мактаб", add: "+ ИЛОВАИ ИШТИРОКЧӢ", clubs: "Клубҳо", remove: "НЕСТ КАРДАН", all: "ҲАМА", removeConfirm: "Иштирокчиро нест кунем", removeAllConfirm: "Ҳамаи иштирокчиёни ин мусобиқаро нест кунем?" },
+  p: { search: "Search", searchCat: "Ҷустуҷӯи категория", category: "Категория", empty: "Иштирокчиён ҳанӯз илова нашудаанд", n: "№", athlete: "Иштирокчӣ", age: "Синну сол", rank: "Дараҷа", school: "Мактаб", add: "+ ИЛОВАИ ИШТИРОКЧӢ", clubs: "Клубҳо", remove: "НЕСТ КАРДАН", all: "ҲАМА", removeConfirm: "Иштирокчиро нест кунем", removeAllConfirm: "Ҳамаи иштирокчиёни ин мусобиқаро нест кунем?", needCategory: "Бе категория мусобиқа оғоз намешавад" },
   draw: {
     empty: "Сетка ҳанӯз сохта нашудааст", open: "КУШОДАНИ СЕТКА", generate: "СОХТАНИ СЕТКА", regenerate: "АЗ НАВ СОХТАН",
     current: "МУҲОРИБАИ ҶОРӢ", fit: "FIT TO SCREEN", bye: "BYE", advancedBye: "ADVANCED BYE", winner: "ҒОЛИБ", eliminated: "ХАРИҶ",
@@ -558,7 +565,7 @@ const tg: typeof ru = {
   gender: { BOYS: "Писарон", GIRLS: "Духтарон", MEN: "Мардон", WOMEN: "Занон", MIXED: "Омехта" },
   status: { DRAFT: "DRAFT", REGISTRATION: "REGISTRATION", READY: "READY", LIVE: "LIVE", FINISHED: "FINISHED", ARCHIVED: "ARCHIVED" },
   empty: { categories: "Категорияҳо ҳанӯз нест", clubs: "Клубҳо ҳанӯз нест", generic: "Маълумот нест" },
-  errors: { name: "Номро ворид кунед", category: "Категорияро интихоб кунед", duplicate: "Эҳтимоли такрор.", anyway: "БОЗ ҲАМ ИЛОВА", age: "Иштирокчӣ ба синну сол мувофиқат намекунад." },
+  errors: { name: "Номро ворид кунед", country: "Кишвари баргузориро интихоб кунед", dates: "Санаҳои мусобиқаро ворид кунед", dateOrder: "Санаи анҷом набояд пеш аз оғоз бошад", lastName: "Насабро ворид кунед", birthDate: "Санаи таваллудро ворид кунед", save: "Сабт нашуд. Майдонҳоро санҷед.", category: "Категорияро интихоб кунед", duplicate: "Эҳтимоли такрор.", anyway: "БОЗ ҲАМ ИЛОВА", age: "Иштирокчӣ ба синну сол мувофиқат намекунад." },
   common: { loading: "Боргирӣ...", all: "Ҳама", yes: "Ҳа", no: "Не" },
   ai: {
     scan: "📷 Иштирокчиро аз рӯи акс илова кунед",

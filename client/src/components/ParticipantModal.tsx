@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "./Ui";
-import { CategoryApi, ClubApi, CountryApi } from "../services/endpoints";
+import { CategoryApi, ClubApi } from "../services/endpoints";
+import { useCountries } from "../hooks/useCountries";
 import { asForm } from "../services/api";
-import type { Category, Club, Country, Participant } from "../types";
+import type { Category, Club, Participant } from "../types";
 import { PhotoScanModal, VoiceFill } from "./AiFeatures";
 import { mediaUrl } from "../lib/config";
 
@@ -19,7 +20,7 @@ export function ParticipantModal({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [countries, setCountries] = useState<Country[]>([]);
+  const { countries, defaultId } = useCountries();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -45,10 +46,14 @@ export function ParticipantModal({
   const [scan, setScan] = useState(false);
 
   useEffect(() => {
-    CountryApi.list().then((r) => setCountries(r.data.items));
-    ClubApi.list().then((r) => setClubs(r.data.items));
-    CategoryApi.list(tournamentId).then((r) => setCats(r.data.items));
+    ClubApi.list().then((r) => setClubs(r.data.items)).catch(() => setClubs([]));
+    CategoryApi.list(tournamentId).then((r) => setCats(r.data.items)).catch(() => setCats([]));
   }, [tournamentId]);
+  useEffect(() => {
+    if (!initial && defaultId) {
+      setForm((s) => (s.countryId ? s : { ...s, countryId: defaultId }));
+    }
+  }, [initial, defaultId]);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((s) => ({ ...s, [k]: v }));
@@ -67,6 +72,9 @@ export function ParticipantModal({
   async function submit(extra: Record<string, unknown> = {}) {
     setErr("");
     if (!form.firstName) return setErr(t("errors.name"));
+    if (!form.lastName) return setErr(t("errors.lastName"));
+    if (!form.birthDate) return setErr(t("errors.birthDate"));
+    if (!form.countryId) return setErr(t("errors.country"));
     const { ParticipantApi } = await import("../services/endpoints");
     const fd = asForm({ ...form, ...extra }, file, "photo");
     try {
@@ -130,6 +138,7 @@ export function ParticipantModal({
             <option value="">—</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {!form.categoryId && <span className="muted">{t("p.needCategory")}</span>}
         </label>
         <label className="field">{t("form.weight")}<input value={form.weight} onChange={(e) => set("weight", e.target.value)} /></label>
         <label className="field">{t("form.entryFee")}<input value={form.entryFee} onChange={(e) => set("entryFee", e.target.value)} /></label>

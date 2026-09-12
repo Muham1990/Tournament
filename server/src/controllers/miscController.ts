@@ -68,11 +68,14 @@ export async function deleteClub(req: Request, res: Response, next: NextFunction
 
 export async function listCountries(_req: Request, res: Response, next: NextFunction) {
   try {
+    const { ensureCountries, fallbackCountryItems } = await import("../services/countries.js");
+    await ensureCountries();
     const items = await prisma.country.findMany({ orderBy: { nameRu: "asc" } });
-    res.json({ items });
+    res.json({ items: items.length ? items : fallbackCountryItems() });
   } catch (e) {
     console.warn("listCountries", e instanceof Error ? e.message : e);
-    res.json({ items: [] });
+    const { fallbackCountryItems } = await import("../services/countries.js");
+    res.json({ items: fallbackCountryItems() });
   }
 }
 

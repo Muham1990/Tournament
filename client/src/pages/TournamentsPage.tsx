@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CountryApi, TournamentApi } from "../services/endpoints";
-import type { Country, Tournament } from "../types";
+import { TournamentApi } from "../services/endpoints";
+import type { Tournament } from "../types";
 import { TournamentCard } from "../components/TournamentCard";
 import { CountryFilter, EmptyState, SearchBar } from "../components/Ui";
+import { useCountries } from "../hooks/useCountries";
 
 export function TournamentsPage() {
   const { t } = useTranslation();
@@ -13,11 +14,7 @@ export function TournamentsPage() {
   const q = sp.get("q") || "";
   const countryId = sp.get("country") || "";
   const [items, setItems] = useState<Tournament[]>([]);
-  const [countries, setCountries] = useState<Country[]>([]);
-
-  useEffect(() => {
-    CountryApi.list().then((r) => setCountries(r.data.items)).catch(() => setCountries([]));
-  }, []);
+  const { countries } = useCountries();
 
   useEffect(() => {
     const tmr = setTimeout(() => {
