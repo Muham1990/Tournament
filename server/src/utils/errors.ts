@@ -34,7 +34,7 @@ export function errorHandler(
     const error = connect
       ? "Нет связи с Neon. В DATABASE_URL уберите channel_binding=require и нажмите Resume в Neon."
       : missing
-        ? "Таблицы ещё не созданы. Подождите минуту после деплоя или проверьте логи migrate."
+        ? "База ещё готовит таблицы. Подождите 20 секунд и нажмите Сохранить снова."
         : "База данных недоступна. Проверьте DATABASE_URL на Railway и что Neon не на паузе.";
     res.status(503).json({ error, code: "DB", prisma: prismaCode || prismaName });
     return;

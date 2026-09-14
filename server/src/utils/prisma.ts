@@ -61,8 +61,7 @@ if (migrateUrl) process.env.DIRECT_URL = migrateUrl;
 
 if (queryUrl) {
   try {
-    const host = new URL(queryUrl).hostname;
-    console.log(`DB host: ${host}`);
+    console.log(`DB host: ${new URL(queryUrl).hostname}`);
   } catch {
     console.warn("DATABASE_URL is set but not a valid URL");
   }
@@ -74,8 +73,22 @@ export const prisma = new PrismaClient({
   datasources: { db: { url: queryUrl || undefined } },
 });
 
+/** Unpooled client for DDL / migrate. */
+export const ddlPrisma = new PrismaClient({
+  datasources: { db: { url: migrateUrl || queryUrl || undefined } },
+});
+
 export async function pingDb() {
   await prisma.$queryRaw`SELECT 1`;
+}
+
+export async function tablesReady() {
+  try {
+    await prisma.$queryRaw`SELECT 1 FROM "Country" LIMIT 1`;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function withDbRetry<T>(fn: () => Promise<T>): Promise<T> {

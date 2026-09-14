@@ -29,7 +29,7 @@ export const TournamentApi = {
   list: (params?: Record<string, string>) =>
     api.get<{ items: Tournament[] }>("/tournaments", { params }),
   get: (id: string) => api.get<{ item: Tournament }>(`/tournaments/${id}`),
-  create: (fd: FormData) => api.post<{ item: Tournament }>("/tournaments", fd),
+  create: (fd: FormData) => api.post<{ item: Tournament }>("/tournaments", fd, { timeout: 60000 }),
   update: (id: string, fd: FormData) => api.put<{ item: Tournament }>(`/tournaments/${id}`, fd),
   remove: (id: string) => api.delete(`/tournaments/${id}`),
   start: (id: string) => api.post(`/tournaments/${id}/start`),
@@ -62,13 +62,13 @@ export type AiAthleteResult = {
 
 export const AiApi = {
   providers: () => api.get<{ providers: { gemini: boolean; groq: boolean; openrouter: boolean } }>("/ai/providers"),
-  scan: (fd: FormData) => api.post<{ found: number; used?: string; results: AiAthleteResult[] }>("/ai/scan", fd),
-  voice: (body: FormData | Record<string, unknown>) => api.post<AiAthleteResult>("/ai/voice", body),
-  commit: (body: Record<string, unknown>) => api.post<AiAthleteResult>("/ai/commit", body),
+  scan: (fd: FormData) => api.post<{ found: number; used?: string; results: AiAthleteResult[] }>("/ai/scan", fd, { timeout: 60000 }),
+  voice: (body: FormData | Record<string, unknown>) => api.post<AiAthleteResult>("/ai/voice", body, { timeout: 60000 }),
+  commit: (body: Record<string, unknown>) => api.post<AiAthleteResult>("/ai/commit", body, { timeout: 30000 }),
   assistant: (body: FormData | Record<string, unknown>) =>
-    api.post<{ reply: string; heard?: string; used?: string }>("/ai/assistant", body),
+    api.post<{ reply: string; heard?: string; used?: string }>("/ai/assistant", body, { timeout: 60000 }),
   voiceTournament: (body: FormData | Record<string, unknown>) =>
-    api.post<AiTournamentDraft>("/ai/voice-tournament", body),
+    api.post<AiTournamentDraft>("/ai/voice-tournament", body, { timeout: 60000 }),
 };
 
 export type AiTournamentDraft = {

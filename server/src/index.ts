@@ -16,7 +16,7 @@ import { apiRouter } from "./routes/index.js";
 import { initSocket } from "./websocket/index.js";
 import { corsOrigin } from "./utils/origins.js";
 import { ensureSchema } from "./services/ensureSchema.js";
-import { pingDb } from "./utils/prisma.js";
+import { pingDb, tablesReady } from "./utils/prisma.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
@@ -39,10 +39,11 @@ async function main() {
   app.get("/api/health", async (_req, res) => {
     try {
       await pingDb();
-      res.json({ ok: true, db: "up" });
+      const tables = await tablesReady();
+      res.json({ ok: true, db: "up", tables });
     } catch (e) {
       const code = (e as { code?: string }).code || "down";
-      res.json({ ok: true, db: code });
+      res.json({ ok: true, db: code, tables: false });
     }
   });
   app.use(optionalAuth);
