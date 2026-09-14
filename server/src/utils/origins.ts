@@ -25,7 +25,9 @@ export function corsOrigin(origin: string | undefined, cb: (err: Error | null, a
   const ok =
     allowedOrigins().includes(clean(origin)) ||
     host.endsWith(".vercel.app") ||
-    host.endsWith(".up.railway.app");
+    host.endsWith(".up.railway.app") ||
+    host === "karate.pp.ua" ||
+    host.endsWith(".karate.pp.ua");
   cb(null, ok);
 }
 
