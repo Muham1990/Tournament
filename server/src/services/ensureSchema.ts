@@ -16,6 +16,7 @@ function firstExisting(paths: string[]) {
 function repoRoot() {
   return firstExisting([
     path.resolve(here, "../../.."),
+    path.resolve(here, "../.."),
     path.resolve(process.cwd()),
     path.resolve(process.cwd(), ".."),
   ].filter(Boolean)) || path.resolve(here, "../../..");
@@ -28,6 +29,7 @@ function schemaPath() {
     path.join(process.cwd(), "prisma", "schema.prisma"),
     path.resolve(here, "../../../prisma/schema.prisma"),
     path.resolve(here, "../../../../prisma/schema.prisma"),
+    path.resolve(here, "../../prisma/schema.prisma"),
   ]);
 }
 
@@ -37,12 +39,19 @@ function prismaEntry() {
     path.join(root, "node_modules", "prisma", "build", "index.js"),
     path.join(process.cwd(), "node_modules", "prisma", "build", "index.js"),
     path.join(root, "server", "node_modules", "prisma", "build", "index.js"),
+    path.resolve(here, "../../../node_modules/prisma/build/index.js"),
+    path.resolve(here, "../../node_modules/prisma/build/index.js"),
   ]);
 }
 
 function migrationSqlPath() {
   const root = repoRoot();
   return firstExisting([
+    path.join(here, "../sql/init.sql"),
+    path.join(process.cwd(), "dist/sql/init.sql"),
+    path.join(process.cwd(), "src/sql/init.sql"),
+    path.join(root, "server/src/sql/init.sql"),
+    path.join(root, "server/dist/sql/init.sql"),
     path.join(root, "prisma", "migrations", "20240905000000_init", "migration.sql"),
     path.join(process.cwd(), "prisma", "migrations", "20240905000000_init", "migration.sql"),
   ]);
@@ -63,7 +72,7 @@ async function runPrisma(args: string[]) {
     const { stdout, stderr } = await execFileAsync(process.execPath, [bin, ...args, "--schema", schema], {
       cwd: path.dirname(path.dirname(schema)),
       env,
-      timeout: 90_000,
+      timeout: 45_000,
     });
     if (stdout) console.log(stdout);
     if (stderr) console.warn(stderr);
@@ -95,14 +104,14 @@ async function applySqlFallback() {
     return false;
   }
   const statements = splitSql(fs.readFileSync(file, "utf8"));
-  console.log(`Applying ${statements.length} SQL statements from migration.sql`);
+  console.log(`Applying ${statements.length} SQL statements from ${file}`);
   for (const stmt of statements) {
     try {
       await ddlPrisma.$executeRawUnsafe(stmt);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/already exists/i.test(msg)) continue;
-      console.warn("SQL stmt failed", msg.slice(0, 200), stmt.slice(0, 80));
+      console.warn("SQL stmt failed", msg.slice(0, 240), stmt.slice(0, 80));
     }
   }
   return tablesReady();
@@ -116,14 +125,14 @@ export async function ensureSchema() {
     if (await tablesReady()) {
       console.log("DB tables already present");
     } else {
-      console.warn("Country table missing — creating schema");
-      await runPrisma(["migrate", "deploy"]);
+      console.warn("Country table missing — creating schema via SQL");
+      const sqlOk = await applySqlFallback();
+      console.warn("SQL fallback", sqlOk ? "created tables" : "incomplete");
       if (!(await tablesReady())) {
-        await runPrisma(["db", "push", "--skip-generate"]);
+        await runPrisma(["migrate", "deploy"]);
       }
       if (!(await tablesReady())) {
-        const ok = await applySqlFallback();
-        console.warn("SQL fallback", ok ? "created tables" : "failed");
+        await runPrisma(["db", "push", "--skip-generate"]);
       }
     }
     if (await tablesReady()) {
@@ -133,7 +142,7 @@ export async function ensureSchema() {
         console.warn("Admin bootstrap failed", e);
       }
     } else {
-      console.warn("DB tables still missing after migrate/push/SQL");
+      console.warn("DB tables still missing after SQL/migrate/push");
     }
   })().finally(() => {
     running = null;

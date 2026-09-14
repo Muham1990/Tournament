@@ -45,12 +45,13 @@ async function recordAudio(onStart: () => void) {
 }
 
 function ProviderBar({
-  provider, setProvider, fallback, setFallback,
+  provider, setProvider, fallback, setFallback, vision,
 }: {
   provider: AiProviderName;
   setProvider: (v: AiProviderName) => void;
   fallback: boolean;
   setFallback: (v: boolean) => void;
+  vision?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -59,7 +60,7 @@ function ProviderBar({
         {t("ai.provider")}
         <select value={provider} onChange={(e) => setProvider(e.target.value as AiProviderName)}>
           <option value="gemini">Gemini</option>
-          <option value="groq">Groq</option>
+          {!vision && <option value="groq">Groq</option>}
           <option value="openrouter">OpenRouter</option>
         </select>
       </label>
@@ -81,8 +82,8 @@ function AddPhotoBtn({ id, onDone }: { id: string; onDone?: () => void }) {
       await ParticipantApi.update(id, asForm({}, f, "photo"));
       setMsg("✓");
       onDone?.();
-    } catch {
-      setMsg("");
+    } catch (e) {
+      setMsg(aiError(e, t("ai.unavailable")));
     }
   }
   return (
@@ -229,7 +230,7 @@ export function PhotoScanModal({
 
   return (
     <Modal title={t("ai.scanTitle")} onClose={() => { stopCam(); onClose(); }} wide>
-      <ProviderBar provider={provider} setProvider={setProvider} fallback={fallback} setFallback={setFallback} />
+      <ProviderBar vision provider={provider} setProvider={setProvider} fallback={fallback} setFallback={setFallback} />
       {step === "pick" && (
         <>
           <div className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void sendFile(f); }}>

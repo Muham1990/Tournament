@@ -1,8 +1,10 @@
 import { AppError } from "../utils/errors.js";
 
 const MODELS = [
+  "gemini-3.8-flash",
   "gemini-3.6-flash",
   "gemini-3.5-flash",
+  "gemini-2.5-flash",
   "gemini-flash-latest",
 ];
 

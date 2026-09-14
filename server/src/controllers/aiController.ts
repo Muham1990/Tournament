@@ -76,7 +76,9 @@ function askPrompt(field: string) {
 }
 
 function num(v: unknown) {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 function saveScanPhoto(file: Express.Multer.File) {
@@ -251,8 +253,8 @@ export async function commitAiParticipant(req: Request, res: Response, next: Nex
     const prepared = await prepareAthlete({
       firstName: String(req.body?.firstName || "") || null,
       lastName: String(req.body?.lastName || "") || null,
-      age: num(Number(req.body?.age)),
-      weight: num(Number(req.body?.weight)),
+      age: num(req.body?.age),
+      weight: num(req.body?.weight),
       country: String(req.body?.country || "") || null,
       gender: typeof req.body?.gender === "string" ? req.body.gender : null,
     }, tournamentId);

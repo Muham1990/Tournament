@@ -84,10 +84,19 @@ export async function pingDb() {
 
 export async function tablesReady() {
   try {
-    await prisma.$queryRaw`SELECT 1 FROM "Country" LIMIT 1`;
-    return true;
+    const rows = await prisma.$queryRaw<Array<{ ok: boolean }>>`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'Country'
+      ) AS ok`;
+    return Boolean(rows[0]?.ok);
   } catch {
-    return false;
+    try {
+      await prisma.$queryRaw`SELECT 1 FROM "Country" LIMIT 1`;
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -40,6 +40,7 @@ async function main() {
     try {
       await pingDb();
       const tables = await tablesReady();
+      if (!tables) void ensureSchema();
       res.json({ ok: true, db: "up", tables });
     } catch (e) {
       const code = (e as { code?: string }).code || "down";

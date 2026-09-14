@@ -1,4 +1,4 @@
-import { prisma } from "../utils/prisma.js";
+import { prisma, withDbRetry } from "../utils/prisma.js";
 import { ageOnDate } from "../utils/age.js";
 import { AppError } from "../utils/errors.js";
 import { ensureAgeCategory, getParticipantCategory } from "./participantCategory.js";
@@ -77,6 +77,7 @@ export async function createFromAi(opts: {
   forceDuplicate?: boolean;
   photoUrl?: string;
 }) {
+  return withDbRetry(async () => {
   const tournament = await prisma.tournament.findUnique({ where: { id: opts.tournamentId } });
   if (!tournament) throw new AppError("NOT_FOUND", "Турнир не найден", 404);
   const birthDate = ageToBirthDate(opts.age);
@@ -107,6 +108,7 @@ export async function createFromAi(opts: {
     item: { ...item, age: ageOnDate(item.birthDate, tournament.dateStart) },
     category: meta.name,
   };
+  });
 }
 
 export async function prepareAthlete(p: ParsedAthlete, tournamentId: string) {
@@ -120,7 +122,17 @@ export async function prepareAthlete(p: ParsedAthlete, tournamentId: string) {
 
   let countryId: string | null = null;
   let countryName = p.country?.trim() || null;
-  if (countryName) {
+  if (!countryName) {
+    const c = await resolveCountry("TJ");
+    if (c) {
+      countryId = c.id;
+      countryName = c.nameRu || c.name;
+      const i = missing.indexOf("country");
+      if (i >= 0) missing.splice(i, 1);
+      const w = warnings.findIndex((x) => x.includes("страну"));
+      if (w >= 0) warnings.splice(w, 1);
+    }
+  } else {
     const c = await resolveCountry(countryName);
     if (!c) {
       missing.push("country");

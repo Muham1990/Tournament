@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
     "test": "tsx --test src/services/drawEngine.test.ts src/services/fightEngine.test.ts"
   },
@@ -30,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.0",
     "pdfkit": "^0.16.0",
+    "prisma": "^6.7.0",
     "socket.io": "^4.8.1",
     "typescript": "^5.8.3",
     "zod": "^3.24.4"

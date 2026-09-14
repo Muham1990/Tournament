@@ -9,6 +9,7 @@ server/uploads/*
 .DS_Store
 client/dist
 server/dist
+server/prisma
 .vscode
 coverage
 prisma/dev.db

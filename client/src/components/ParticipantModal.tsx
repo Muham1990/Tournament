@@ -108,7 +108,7 @@ export function ParticipantModal({
         <PhotoScanModal
           tournamentId={tournamentId}
           onClose={() => setScan(false)}
-          onSaved={() => { onSaved(); onClose(); }}
+          onSaved={onSaved}
         />
       )}
       <div className="form-grid">
