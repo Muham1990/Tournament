@@ -149,8 +149,8 @@ export async function aiJson<T>(opts: {
   image?: { mimeType: string; data: string };
   parseError?: string;
 }): Promise<{ data: T; used: AiProvider }> {
-  const list = providersToTry(opts.provider, opts.fallback);
-  if (!list.length) throw aiUnavailable();
+  const list = providersToTry(opts.provider, opts.fallback).filter((p) => !(opts.image && p === "groq"));
+  if (!list.length) throw opts.image ? visionUnsupported() : aiUnavailable();
 
   let last: unknown = aiUnavailable();
   for (const p of list) {

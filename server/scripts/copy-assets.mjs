@@ -18,14 +18,19 @@ if (sqlSrc) {
 }
 
 const schemaSrc = [
-  path.join(serverRoot, "prisma", "schema.prisma"),
   path.join(serverRoot, "..", "prisma", "schema.prisma"),
+  path.join(serverRoot, "prisma", "schema.prisma"),
 ].find((p) => fs.existsSync(p));
 if (schemaSrc) {
   const destDir = path.join(serverRoot, "prisma");
-  fs.mkdirSync(destDir, { recursive: true });
-  fs.copyFileSync(schemaSrc, path.join(destDir, "schema.prisma"));
-  const migSrc = path.join(path.dirname(schemaSrc), "migrations");
-  const migDest = path.join(destDir, "migrations");
-  if (fs.existsSync(migSrc)) fs.cpSync(migSrc, migDest, { recursive: true });
+  const destSchema = path.join(destDir, "schema.prisma");
+  if (path.resolve(schemaSrc) !== path.resolve(destSchema)) {
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.copyFileSync(schemaSrc, destSchema);
+    const migSrc = path.join(path.dirname(schemaSrc), "migrations");
+    const migDest = path.join(destDir, "migrations");
+    if (fs.existsSync(migSrc) && path.resolve(migSrc) !== path.resolve(migDest)) {
+      fs.cpSync(migSrc, migDest, { recursive: true });
+    }
+  }
 }
