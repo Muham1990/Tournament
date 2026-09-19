@@ -2,6 +2,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
 import { useSettings } from "../hooks/useSettings";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { canSeeAdminEntry } from "../lib/adminGate";
@@ -18,6 +19,7 @@ const NAV = [
 export function Header() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const { user: sbUser, confirmed: sbConfirmed } = useSupabaseAuth();
   const settings = useSettings();
   const nav = useNavigate();
   const loc = useLocation();
@@ -85,6 +87,14 @@ export function Header() {
           ))}
         </nav>
         <div className="header-right">
+          <NavLink
+            to={sbUser && sbConfirmed ? "/account" : sbUser ? "/confirm-email" : "/register"}
+            className="account-btn"
+            title={sbUser && sbConfirmed ? t("auth.cabinet") : sbUser ? t("auth.checkTitle") : t("auth.register")}
+            aria-label={sbUser && sbConfirmed ? t("auth.cabinet") : sbUser ? t("auth.checkTitle") : t("auth.register")}
+          >
+            <AccountCircle user={sbUser} confirmed={sbConfirmed} />
+          </NavLink>
           {showAdmin && (user ? (
             <button className="login-link" onClick={() => nav("/admin")}>
               <UserIco /> <span className="login-text">{t("nav.admin")}</span>
@@ -113,6 +123,14 @@ export function Header() {
           : NAV.map(([to, key]) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>{t(key)}</NavLink>
           ))}
+        {!inAdmin && (
+          <NavLink
+            to={sbUser && sbConfirmed ? "/account" : sbUser ? "/confirm-email" : "/register"}
+            onClick={() => setOpen(false)}
+          >
+            {sbUser && sbConfirmed ? t("auth.cabinet") : sbUser ? t("auth.checkTitle") : t("auth.register")}
+          </NavLink>
+        )}
         {showAdmin && user && (
           <>
             {!inAdmin && <NavLink to="/admin" onClick={() => setOpen(false)}>{t("nav.admin")}</NavLink>}
@@ -124,6 +142,16 @@ export function Header() {
         )}
       </nav>
     </header>
+  );
+}
+
+function AccountCircle({ user, confirmed }: { user: { email?: string; user_metadata?: { full_name?: string } } | null; confirmed: boolean }) {
+  const raw = String(user?.user_metadata?.full_name || user?.email || "").trim();
+  const letter = confirmed && raw ? raw[0].toUpperCase() : "";
+  return (
+    <span className={`account-circle${letter ? " on" : ""}`}>
+      {letter || <UserIco />}
+    </span>
   );
 }
 

@@ -5,6 +5,9 @@ import { HomePage } from "./pages/HomePage";
 import { TournamentsPage } from "./pages/TournamentsPage";
 import { TournamentPage } from "./pages/TournamentPage";
 import { ContactsPage, PricingPage, LoginPage } from "./pages/StaticPages";
+import { RegisterPage } from "./pages/RegisterPage";
+import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
+import { AccountPage } from "./pages/AccountPage";
 import { AdminGatePage } from "./pages/AdminGatePage";
 import { LiveSportsPage } from "./pages/LiveSportsPage";
 import {
@@ -27,6 +30,9 @@ export function App() {
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/live" element={<LiveSportsPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+        <Route path="/account" element={<AccountPage />} />
         <Route path="/a/:code" element={<AdminGatePage />} />
       </Route>
       <Route path="/admin" element={<AdminLayout />}>
