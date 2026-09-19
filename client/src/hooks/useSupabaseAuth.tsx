@@ -58,7 +58,10 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await sb.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name.trim() } },
+          options: {
+            data: { full_name: name.trim() },
+            emailRedirectTo: `${window.location.origin}/account`,
+          },
         });
         if (error) throw error;
         if (data.user?.identities && data.user.identities.length === 0) {
@@ -85,7 +88,11 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       },
       resendSignup: async (email) => {
         const sb = requireSupabase();
-        const { error } = await sb.auth.resend({ type: "signup", email });
+        const { error } = await sb.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: `${window.location.origin}/account` },
+        });
         if (error) throw error;
       },
       signOut: async () => {

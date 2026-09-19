@@ -88,6 +88,7 @@ export function ConfirmEmailPage() {
         <div className="auth-badge">{t("auth.code")}</div>
         <h2>{t("auth.checkTitle")}</h2>
         <p className="login-lead">{t("auth.checkLead")}</p>
+        <p className="muted">{t("auth.checkSpam")}</p>
         <div className="auth-fields">
           <AuthField
             label={t("auth.email")}
